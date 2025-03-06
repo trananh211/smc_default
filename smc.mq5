@@ -66,7 +66,8 @@ input ENUM_TIMEFRAMES Timeframe = PERIOD_CURRENT;
 //#region variable declaration
 input int _PointSpace = 1000;
 //Constant
-string IDM_TEXT = "IDM";
+string IDM_TEXT = "idm";
+string IDM_TEXT_LIVE = "idm-live";
 string CHOCH_TEXT = "CHoCH";
 string I_CHOCH_TEXT = "i-choch";
 string BOS_TEXT = "BOS";
