@@ -429,19 +429,21 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          // active find Low
          findLow = 1; L = bar1.low; LTime = bar1.time;
+         findHigh = 0; H = 0;
       }
       
       // CHoCH Low
       if (
          //LastSwingMajor == 1 && 
          bar1.low < arrPbLow[0] && arrPbLow[0] != arrChoLow[0]) {
-         text += "\n 1.5 sTrend == 1 && mTrend == 1 && LastSwingMajor == 1 && bar1.low < arrPbLow[0] :" + bar1.low + "<" + arrPbLow[0];
+         text += "\n 1.5 sTrend == 1 && mTrend == 1 && LastSwingMajor == random && bar1.low < arrPbLow[0] :" + bar1.low + "<" + arrPbLow[0];
          text += "\n => Cap nhat => Ve line. sTrend = -1; mTrend = -1; LastSwingMajor = -1; findHigh = 0; idmLow = Highs[0]= "+ Highs[0];
          // draw choch Low
          drawLine(I_CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], barTime, arrPbLow[0], 1, I_CHOCH_TEXT, clrRed, STYLE_SOLID);
          
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          
+         LastSwingMajor = -1;
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
          
@@ -572,13 +574,14 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          // active find High
          findHigh = 1; H = bar1.high; HTime = bar1.time;
+         findLow = 0; L = 0;
       }
       
       // CHoCH High
       if (
          //LastSwingMajor == -1 && 
          bar1.high > arrPbHigh[0] && arrPbHigh[0] != arrChoHigh[0]) {
-         text += "\n 3.5 sTrend == -1 && mTrend == -1 && LastSwingMajor == -1 && bar1.high > arrPbHigh[0] :" + bar1.high + ">" + arrPbHigh[0];
+         text += "\n -3.5 sTrend == -1 && mTrend == -1 && LastSwingMajor == random && bar1.high > arrPbHigh[0] :" + bar1.high + ">" + arrPbHigh[0];
          text += "\n => Cap nhat => sTrend = 1; mTrend = 1; LastSwingMajor = 1; findLow = 0; idmHigh = Lows[0] = "+Lows[0];
          
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
@@ -586,6 +589,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          // draw choch high
          drawLine(I_CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, I_CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
          
+         LastSwingMajor = 1;
          L_idmHigh = idmHigh;
          L_idmHighTime = idmHighTime;
          
@@ -599,7 +603,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
       if (
          //LastSwingMajor == 1 && 
          bar1.low < arrPbLow[0] && arrPbLow[0] != arrChoLow[0]) {
-         text += "\n 3.6 ";
+         text += "\n -3.6 ";
          
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          
@@ -621,7 +625,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
    if (sTrend == -1 && mTrend == 1) {
       // continue Down, COntinue Choch down
       if (LastSwingMajor == 1 && bar1.low < arrPbLow[0] && arrPbLow[0] != arrChoLow[0]) {
-         
+         text += "\n -4.1 ";
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          
          if (H != 0 && H != arrPbHigh[0]) updatePointStructure(H, HTime, arrPbHigh, arrPbHTime, false);
@@ -638,7 +642,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
       // CHoCH Up. 
       if (LastSwingMajor == 1 && bar1.high > arrPbHigh[0] && arrPbHigh[0] != arrChoHigh[0]) {
             
-         text += "\n 3.6 sTrend == -1 && mTrend == 1 && LastSwingMajor == 1 && bar1.high > arrPbHigh[0] : " + bar1.high + ">" + arrPbHigh[0];
+         text += "\n -4.2 sTrend == -1 && mTrend == 1 && LastSwingMajor == 1 && bar1.high > arrPbHigh[0] : " + bar1.high + ">" + arrPbHigh[0];
          text += "\n => Cap nhat => sTrend = 1; mTrend = 1; LastSwingMajor = 1; findLow = 0; idmHigh = Lows[0] = "+Lows[0];
          
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
