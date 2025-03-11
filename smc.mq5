@@ -64,13 +64,19 @@ datetime idmLowTime, idmHighTime, L_idmLowTime, L_idmHighTime , HTime, LTime;
 //structure confirm
 //bool mnStrc, prevMnStrc, isPrevBos, findIDM, isBosUp, isBosDn, isCocUp, isCocDn;
 
-
+// POI
+double PoiExtremeBull[], PoiExtremeBear[];
+datetime PoiExtremeBullTime[], PoiExtremeBearTime[];
+double PoiBull[], PoiBear[];
+datetime PoiBullTime[], PoiBearTime[];
 //---
 //--- -----------------------------------------------------------------
 //---
 input ENUM_TIMEFRAMES Timeframe = PERIOD_CURRENT;
 //#region variable declaration
-input int _PointSpace = 1000;
+input int _PointSpace = 1000; // space for draw with swing, line
+input int poi_limit = 50; // poi limit save to array
+
 //Constant
 string IDM_TEXT = "idm";
 string IDM_TEXT_LIVE = "idm-l";
@@ -266,7 +272,7 @@ void realGannWave() {
    bar1 = rates[1];
    bar2 = rates[2];
    bar3 = rates[3];
-   
+   Print("------------------------------");
    int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
    
    updatePointTopBot(bar1, bar2, bar3, enabledComment);
@@ -336,8 +342,6 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          idmLowTime = HighsTime[0];
          sTrend = -1; mTrend = -1; LastSwingMajor = 1;
          
-         //drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, 1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
-         
       } else if (barHigh > arrTop[0]) { 
          text += "\n 0.1. barHigh > arrTop[0]"+" => "+barHigh+" > "+arrTop[0];
          text += " => Cap nhat idmHigh = Lows[0] = "+Lows[0]+"; sTrend = 1; mTrend = 1; LastSwingMajor = -1;";
@@ -347,8 +351,6 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          idmHigh = Lows[0]; idmHighTime = LowsTime[0];
          sTrend = 1; mTrend = 1; LastSwingMajor = -1;
-         
-         //drawLine(IDM_TEXT_LIVE, idmHighTime, idmHigh, bar1.time, idmHigh, -1, IDM_TEXT_LIVE, clrAliceBlue, STYLE_DOT);
       }
    }
    // End Lan dau tien
@@ -379,18 +381,15 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          text += "\n => Cap nhat: findLow = 0, idmHigh = Lows[0] = "+Lows[0]+" ; sTrend == 1; mTrend == 1; LastSwingMajor == 1;";
          
          updatePointStructure(arrTop[0], arrTopTime[0], arrBoHigh, arrBoHighTime, false);
-         // Update ArrayBot[0]
-         //if(arrBot[0] != intSLows[0]) {
-            updatePointStructure(intSLows[0], intSLowTime[0], arrBot, arrBotTime, false);
-         //}
+         updatePointStructure(intSLows[0], intSLowTime[0], arrBot, arrBotTime, false);
+         // update POI Bullish
+         updatePointStructure(arrBot[0], arrBotTime[0], PoiBull, PoiBullTime, false, poi_limit);
          
          L_idmHigh = idmHigh;
          L_idmHighTime = idmHighTime;
          
          sTrend = 1; mTrend = 1; LastSwingMajor = 1;
          findLow = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
-         
-          //drawLine(IDM_TEXT_LIVE, idmHighTime, idmHigh, bar1.time, idmHigh, -1, IDM_TEXT_LIVE, clrAliceBlue, STYLE_DOT);
       }
       
       if (bar3.high < bar2.high && bar2.high > bar1.high) { // tim thay dinh high 
@@ -442,6 +441,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          drawLine(I_CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], barTime, arrPbLow[0], 1, I_CHOCH_TEXT, clrRed, STYLE_SOLID);
          
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
+         text += "\n => Cap nhat => POI Bearish : arrPbHigh[0] "+ arrPbHigh[0];
+         // update Extreme POI Bearish
+         updatePointStructure(arrPbHigh[0], arrPbHTime[0], PoiExtremeBear, PoiExtremeBearTime, false, poi_limit);
          
          LastSwingMajor = -1;
          L_idmLow = idmLow;
@@ -449,20 +451,21 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          sTrend = -1; mTrend = -1; LastSwingMajor = -1;
          findHigh = 0; idmLow = Highs[0]; idmLowTime = HighsTime[0];
-         
-          //drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, 1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
       }
       
       // continue Up, Continue BOS up
       if (
          //LastSwingMajor == -1 && 
          bar1.high > arrPbHigh[0] && arrPbHigh[0] != arrChoHigh[0]) {
-         text += "\n 1.6 arrPbHigh: "+ arrPbHigh[0] + " != arrChoHigh[0]: "+arrChoHigh[0];
+         text += "\n 1.6 Continue Bos UP. sTrend == 1 && mTrend == 1 && LastSwingMajor == random && bar1.high > arrPbHigh && arrPbHigh: "+ arrPbHigh[0] + " != arrChoHigh[0]: "+arrChoHigh[0];
          
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
          
          // update Point HL
          if (L != 0 && L != arrPbLow[0]) updatePointStructure(L, LTime, arrPbLow, arrPbLTime, false);
+         text += "\n => cap nhat : POI Bullish L : "+L;
+         // update POI Extreme Bullish
+         updatePointStructure(arrPbLow[0], arrPbLTime[0], PoiExtremeBull, PoiExtremeBullTime, false, poi_limit);
          
          drawPointStructure(-1, arrPbLow[0], arrPbLTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(BOS_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, BOS_TEXT, clrAliceBlue, STYLE_SOLID);
@@ -472,45 +475,45 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          findLow = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
          L = 0; 
-         
-          //drawLine(IDM_TEXT_LIVE, idmHighTime, idmHigh, bar1.time, idmHigh, -1, IDM_TEXT_LIVE, clrAliceBlue, STYLE_DOT);
       }
    }
 
    if(sTrend == 1 && mTrend == -1) {
       // continue Up, Continue Choch up
       if (LastSwingMajor == -1 && bar1.high > arrPbHigh[0] && arrPbHigh[0] != arrChoHigh[0]) {
-         text += "2.1 ";
+         text += "2.1 CHoCH up. sTrend == 1 && mTrend == -1 && LastSwingMajor == -1 && bar1.high > arrPbHigh[0]";
          
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
          
          if (L != 0 && L != arrPbLow[0]) updatePointStructure(L, LTime, arrPbLow, arrPbLTime, false);
          drawPointStructure(-1, arrPbLow[0], arrPbLTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(I_CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, I_CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
+         text += "\n => Cap nhat => POI Bullish : L = "+ L;
+         // update POI Extreme Bullish
+         updatePointStructure(arrPbLow[0], arrPbLTime[0], PoiExtremeBull, PoiExtremeBullTime, false, poi_limit);
          
          L_idmHigh = idmHigh;
          L_idmHighTime = idmHighTime;
          
          findLow = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
          L = 0; 
-         
-          //drawLine(IDM_TEXT_LIVE, idmHighTime, idmHigh, bar1.time, idmHigh, -1, IDM_TEXT_LIVE, clrAliceBlue, STYLE_DOT);
       }
       // CHoCH DOwn. 
       if (LastSwingMajor == -1 && bar1.low < arrPbLow[0] && arrPbLow[0] != arrChoLow[0]) {
          text += "\n 2.2 sTrend == 1 && mTrend == -1 && LastSwingMajor == -1 && bar1.low < arrPbLow[0] : " + bar1.low + "<" + arrPbLow[0];
-         text += "\n => Cap nhat => sTrend = -1; mTrend = -1; LastSwingMajor = -1; findHigh = 0; idmLow = Highs[0] = "+Highs[0];
+         text += "\n => Cap nhat => POI Low. sTrend = -1; mTrend = -1; LastSwingMajor = -1; findHigh = 0; idmLow = Highs[0] = "+Highs[0];
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          // draw choch low
          drawLine(I_CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, I_CHOCH_TEXT, clrRed, STYLE_SOLID);
+         
+         // update POI Extreme Bearish
+         updatePointStructure(arrPbHigh[0], arrPbHTime[0], PoiExtremeBear, PoiExtremeBearTime, false, poi_limit);
          
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
          
          sTrend = -1; mTrend = -1; LastSwingMajor = -1;
          findHigh = 0; idmLow = Highs[0]; idmLowTime = HighsTime[0];
-         
-          //drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, 1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
       }
    }
    
@@ -521,19 +524,16 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          text += "\n => Cap nhat: findHigh = 0, idmLow = Highs[0] = "+Highs[0]+" ; sTrend == -1; mTrend == -1; LastSwingMajor == -1;";
          
          updatePointStructure(arrBot[0], arrBotTime[0], arrBoLow, arrBoLowTime, false);
+         updatePointStructure(intSHighs[0], intSHighTime[0], arrTop, arrTopTime, false);
          
-         // Update ArrayBot[0]
-         //if(arrTop[0] != intSHighs[0]) {
-            updatePointStructure(intSHighs[0], intSHighTime[0], arrTop, arrTopTime, false);
-         //}
+         // update POI Bearish
+         updatePointStructure(arrTop[0], arrTopTime[0], PoiBear, PoiBearTime, false, poi_limit);
          
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
          
          sTrend = -1; mTrend = -1; LastSwingMajor = -1;
          findHigh = 0; idmLow = Highs[0]; idmLowTime = HighsTime[0];
-         
-          //drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, 1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
       }
       
       if (bar3.low > bar2.low && bar2.low < bar1.low) { // tim thay swing low 
@@ -543,7 +543,8 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             text += "=> Cap nhat: arrBot[0] = bar2.low = "+bar2.low+" ; sTrend == -1; mTrend == -1; LastSwingMajor == 1;";
             
             // Update ArrayBot[0]
-            if(arrBot[0] != bar2.low) updatePointStructure(bar2.low, bar2.time, arrBot, arrBotTime, false);
+            if(arrBot[0] != bar2.low) 
+               updatePointStructure(bar2.low, bar2.time, arrBot, arrBotTime, false);
             
             sTrend = -1; mTrend = -1; LastSwingMajor = 1;
          }
@@ -583,8 +584,11 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          bar1.high > arrPbHigh[0] && arrPbHigh[0] != arrChoHigh[0]) {
          text += "\n -3.5 sTrend == -1 && mTrend == -1 && LastSwingMajor == random && bar1.high > arrPbHigh[0] :" + bar1.high + ">" + arrPbHigh[0];
          text += "\n => Cap nhat => sTrend = 1; mTrend = 1; LastSwingMajor = 1; findLow = 0; idmHigh = Lows[0] = "+Lows[0];
-         
+         text += "\n => Cap nhat => POI Bullish = arrPbLow[0] : "+ arrPbLow[0];
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
+         
+         // update POI Extreme Bullish
+         updatePointStructure(arrPbLow[0], arrPbLTime[0], PoiExtremeBull, PoiExtremeBullTime, false, poi_limit);
          
          // draw choch high
          drawLine(I_CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, I_CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
@@ -595,15 +599,13 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          sTrend = 1; mTrend = 1; LastSwingMajor = 1;
          findHigh = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
-         
-          //drawLine(IDM_TEXT_LIVE, idmHighTime, idmHigh, bar1.time, idmHigh, -1, IDM_TEXT_LIVE, clrAliceBlue, STYLE_DOT);
       }
       
       // continue Down, COntinue BOS down
       if (
          //LastSwingMajor == 1 && 
          bar1.low < arrPbLow[0] && arrPbLow[0] != arrChoLow[0]) {
-         text += "\n -3.6 ";
+         text += "\n -3.6 sTrend == -1 && mTrend == -1 & LastSwingMajor == random && bar1.low < arrPbLow[0]";
          
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          
@@ -612,40 +614,47 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          drawPointStructure(1, arrPbHigh[0], arrPbHTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(BOS_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, BOS_TEXT, clrRed, STYLE_SOLID);
+         text += "\n => Cap nhat => POI Bearish H:" + H;
+         
+         // update POI Extreme Bearish
+         updatePointStructure(arrPbHigh[0], arrPbHTime[0], PoiExtremeBear, PoiExtremeBearTime, false, poi_limit);
          
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
          
          findHigh = 0; idmLow = Highs[0]; idmHighTime = LowsTime[0]; H = 0;
-         
-          //drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, 1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
       }
       
    }
    if (sTrend == -1 && mTrend == 1) {
       // continue Down, COntinue Choch down
       if (LastSwingMajor == 1 && bar1.low < arrPbLow[0] && arrPbLow[0] != arrChoLow[0]) {
-         text += "\n -4.1 ";
+         text += "\n -4.1 sTrend == -1 && mTrend == 1 && LastSwingMajor == 1 && bar1.low < arPbLow[0]";
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          
          if (H != 0 && H != arrPbHigh[0]) updatePointStructure(H, HTime, arrPbHigh, arrPbHTime, false);
          drawPointStructure(1, arrPbHigh[0], arrPbHTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(I_CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, I_CHOCH_TEXT, clrRed, STYLE_SOLID);
          
+         text += "\n => Cap nhat => POI bearish H: "+H;
+         // update POI Extreme Bearish
+         updatePointStructure(arrPbHigh[0], arrPbHTime[0], PoiExtremeBear, PoiExtremeBearTime, false, poi_limit);
+         
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
          
          findHigh = 0; idmLow = Highs[0]; idmHighTime = LowsTime[0]; H = 0;
-         
-          //drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, 1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
       }
       // CHoCH Up. 
       if (LastSwingMajor == 1 && bar1.high > arrPbHigh[0] && arrPbHigh[0] != arrChoHigh[0]) {
             
          text += "\n -4.2 sTrend == -1 && mTrend == 1 && LastSwingMajor == 1 && bar1.high > arrPbHigh[0] : " + bar1.high + ">" + arrPbHigh[0];
          text += "\n => Cap nhat => sTrend = 1; mTrend = 1; LastSwingMajor = 1; findLow = 0; idmHigh = Lows[0] = "+Lows[0];
-         
+         text += "\n => Cap nhat => POI Bullish = arrPbLow[0] : "+ arrPbLow[0];
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
+         
+         // update POI Extreme Bullish
+         updatePointStructure(arrPbLow[0], arrPbLTime[0], PoiExtremeBull, PoiExtremeBullTime, false, poi_limit);
          
          // draw choch low
          drawLine(I_CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, I_CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
@@ -655,8 +664,6 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          sTrend = 1; mTrend = 1; LastSwingMajor = 1;
          findLow = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
-         
-          //drawLine(IDM_TEXT_LIVE, idmHighTime, idmHigh, bar1.time, idmHigh, -1, IDM_TEXT_LIVE, clrAliceBlue, STYLE_DOT);
       }
    }
    
@@ -668,11 +675,11 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
       Print("arrPbHigh: "); ArrayPrint(arrPbHigh);
       Print("arrPbLow: "); ArrayPrint(arrPbLow);
       
-      Print("arrBoHigh: "+arrBoHigh[0]);
-      Print("arrBoLow: "+arrBoLow[0]);
-      Print("arrChoHigh: "+arrChoHigh[0]);
-      Print("arrChoLow: "+arrChoLow[0]);
-      Print("\n ");
+      //Print("arrBoHigh: "+arrBoHigh[0]);
+      //Print("arrBoLow: "+arrBoLow[0]);
+      //Print("arrChoHigh: "+arrChoHigh[0]);
+      //Print("arrChoLow: "+arrChoLow[0]);
+      //Print("\n ");
    }
 }
 
@@ -753,9 +760,6 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          // Update new intSHigh
          updatePointStructure(bar2.high, bar2.time, intSHighs, intSHighTime, false);
          drawPointStructure(1, bar2.high, bar2.time, INTERNAL_STRUCTURE, false, enabledDraw);
-         //// Update new arrTop
-         //updatePointStructure(bar2.high, bar2.time, arrTop, arrTopTime, false);
-         //drawPointStructure(1, bar2.high, bar2.time, arrTop, INTERNAL_STRUCTURE_KEY, false, enabledDraw);
          
          iTrend = 1;
          LastSwingInternal = -1;
@@ -771,12 +775,6 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          updatePointStructure(bar2.high, bar2.time, intSHighs, intSHighTime, true);
          drawPointStructure(1, bar2.high, bar2.time, INTERNAL_STRUCTURE, true, enabledDraw);
          
-         
-         //// Delete Label
-         //if (ArraySize(arrTop) > 1) deleteObj(arrTopTime[0], arrTop[0], iWingding_internal_key_high, "");
-         //// Update new arrTop
-         //updatePointStructure(bar2.high, bar2.time, arrTop, arrTopTime, true);
-         //drawPointStructure(1, bar2.high, bar2.time, arrTop, INTERNAL_STRUCTURE_KEY, true, enabledDraw);
          iTrend = 1;
          LastSwingInternal = -1;
          resultStructure = 2;
@@ -790,9 +788,6 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          updatePointStructure(bar2.high, bar2.time, intSHighs, intSHighTime, false);
          drawPointStructure(1, bar2.high, bar2.time, INTERNAL_STRUCTURE, false, enabledDraw);
          
-         //// Update new arrTop
-         //updatePointStructure(bar2.high, bar2.time, arrTop, arrTopTime, false);
-         //drawPointStructure(1, bar2.high, bar2.time, arrTop, INTERNAL_STRUCTURE_KEY, false, enabledDraw);
          iTrend = 1;
          LastSwingInternal = -1;
          resultStructure = 3;
@@ -814,20 +809,13 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
       }
       
       // DONE 5
-      if (iTrend == -1 && LastSwingInternal == -1 && bar2.high > intSHighs[0] 
-         //&& bar2.high > intSHighs[1]
-         ) {    // CHoCH
+      if (iTrend == -1 && LastSwingInternal == -1 && bar2.high > intSHighs[0] ) {    // CHoCH
          // Delete prev label
          if (ArraySize(intSHighs) > 1) deleteObj(intSHighTime[0], intSHighs[0], iWingding_internal_high, "");
          // Update new intSHigh
          updatePointStructure(bar2.high, bar2.time, intSHighs, intSHighTime, true);
          drawPointStructure(1, bar2.high, bar2.time, INTERNAL_STRUCTURE, true, enabledDraw);
-         
-         //// Update new arrTop
-         //if (ArraySize(arrTop) > 1) deleteObj(arrTopTime[0], arrTop[0], iWingding_internal_high, "");
-         //updatePointStructure(bar2.high, bar2.time, arrTop, arrTopTime, true);
-         //drawPointStructure(1, bar2.high, bar2.time, arrTop, INTERNAL_STRUCTURE_KEY, true, enabledDraw);
-         
+                  
          iTrend = (bar2.high <= intSHighs[1])? -1 : 1;
          LastSwingInternal = -1;
          resultStructure = 5;
@@ -878,11 +866,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          // Update new intSLows
          updatePointStructure(bar2.low, bar2.time, intSLows, intSLowTime, false);
          drawPointStructure(-1, bar2.low, bar2.time, INTERNAL_STRUCTURE, false, enabledDraw);
-         
-         //// Update new arrBot
-         //updatePointStructure(bar2.low, bar2.time, arrBot, arrBotTime, false);
-         //drawPointStructure(-1, bar2.low, bar2.time, arrBot, INTERNAL_STRUCTURE_KEY, false, enabledDraw);
-         
+                  
          iTrend = -1;
          LastSwingInternal = 1;
          resultStructure = -1;
@@ -896,13 +880,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          // Update new intSLows
          updatePointStructure(bar2.low, bar2.time, intSLows, intSLowTime, true);
          drawPointStructure(-1, bar2.low, bar2.time, INTERNAL_STRUCTURE, true, enabledDraw);
-         
-         //// Delete Label
-         //if (ArraySize(arrBot) > 1) deleteObj(arrBotTime[0], arrBot[0], iWingding_internal_key_low, "");
-         //// Update new arrBot
-         //updatePointStructure(bar2.low, bar2.time, arrBot, arrBotTime, true);
-         //drawPointStructure(-1, bar2.low, bar2.time, arrBot, INTERNAL_STRUCTURE_KEY, true, enabledDraw);
-         
+                  
          iTrend = -1;
          LastSwingInternal = 1;
          resultStructure = -2;
@@ -915,9 +893,6 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          updatePointStructure(bar2.low, bar2.time, intSLows, intSLowTime, false);
          drawPointStructure(-1, bar2.low, bar2.time, INTERNAL_STRUCTURE, false, enabledDraw);
          
-         //// Update new arrBot
-         //updatePointStructure(bar2.low, bar2.time, arrBot, arrBotTime, false);
-         //drawPointStructure(-1, bar2.low, bar2.time, arrBot, INTERNAL_STRUCTURE_KEY, false, enabledDraw);
          iTrend = -1;
          LastSwingInternal = 1;
          resultStructure = -3;
@@ -936,21 +911,13 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
       }
       
       // DONE 5
-      if (iTrend == 1 && LastSwingInternal == 1 && bar2.low < intSLows[0] 
-         //&& bar2.low < intSLows[1]
-         ) {  // CHoCH
+      if (iTrend == 1 && LastSwingInternal == 1 && bar2.low < intSLows[0] ) {  // CHoCH
          // Delete Label
          if (ArraySize(intSLows) > 1) deleteObj(intSLowTime[0], intSLows[0], iWingding_internal_low, "");
          // update intSLows
          updatePointStructure(bar2.low, bar2.time, intSLows, intSLowTime, true);
          drawPointStructure(-1, bar2.low, bar2.time, INTERNAL_STRUCTURE, true, enabledDraw);
-         
-         //// Delete Label
-         //if (ArraySize(arrBot) > 1) deleteObj(arrBotTime[0], arrBot[0], iWingding_internal_key_low, "");
-         //// Update new arrBot
-         //updatePointStructure(bar2.low, bar2.time, arrBot, arrBotTime, true);
-         //drawPointStructure(-1, bar2.low, bar2.time, arrBot, INTERNAL_STRUCTURE_KEY, true, enabledDraw);
-         
+                  
          iTrend = (bar2.low >= intSLows[1]) ? 1 : -1;
          LastSwingInternal = 1;
          resultStructure = -5;
@@ -1007,7 +974,7 @@ void drawPointStructure(int itype, double priceNew, double timeNew, int typeStru
    }
 }
 
-void updatePointStructure(double priceNew, double timeNew, double& arPrice[], datetime& arTime[], bool del) {
+void updatePointStructure(double priceNew, double timeNew, double& arPrice[], datetime& arTime[], bool del, int limit = 10) {
    if (ArraySize(arPrice) >= 1 && del == true) {
       // cap nhat lai arPrice
       ArrayRemove(arPrice, 0, 1);
@@ -1016,7 +983,7 @@ void updatePointStructure(double priceNew, double timeNew, double& arPrice[], da
    
    // Store value in arPrice[]
    // shift existing elements in arPrice[] to make space for the new value
-   ArrayResize(arPrice, MathMin(ArraySize(arPrice) + 1, 10));
+   ArrayResize(arPrice, MathMin(ArraySize(arPrice) + 1, limit));
    for(int i = ArraySize(arPrice) - 1; i > 0; --i) {
       arPrice[i] = arPrice[i-1];   
    }
@@ -1025,7 +992,7 @@ void updatePointStructure(double priceNew, double timeNew, double& arPrice[], da
    
    // Store newtime in arTime[]
    // shift existing elements in arTime[] to make space for the new value
-   ArrayResize(arTime, MathMin(ArraySize(arTime) + 1, 10));
+   ArrayResize(arTime, MathMin(ArraySize(arTime) + 1, limit));
    for(int i = ArraySize(arTime) - 1; i > 0; --i) {
       arTime[i] = arTime[i-1];   
    }
