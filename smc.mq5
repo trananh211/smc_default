@@ -771,6 +771,21 @@ void drawZone(MqlRates& bar1) {
       }
       drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, -1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
    }
+   
+   // Zone.
+   if (sTrend == 1) { // care PB Low
+      for(int i=0;i<ArraySize(zArrPbLow) - 1;i++) {
+         Print("zone "+ i);
+         drawBox("POI", zArrPbLow[i].time, zArrPbLow[i].low, bar1.time, zArrPbLow[i].high,1, clrGreen, 1);
+      }
+   }
+   
+   if (sTrend == -1) { // care PB High
+      for(int i=0;i<ArraySize(zArrPbHigh) - 1;i++) {
+         Print("zone "+ i);
+         drawBox("POI", zArrPbHigh[i].time, zArrPbHigh[i].high, bar1.time, zArrPbHigh[i].low,1, clrPink, 1);
+      }
+   }  
 }
 
 //---
@@ -1132,7 +1147,21 @@ void updatePointStructure(double priceNew, double timeNew, double& arPrice[], da
    arTime[0] = timeNew;
 }
 
-//+------------------------------------------------------------------+
+//+--------------------------------Draw Box ----------------------------------+
+void drawBox(string name, datetime time_start, double price_start, datetime time_end, double price_end, int style, color box_color, int width = 1) {
+   string objName = name+TimeToString(time_start);
+   if(ObjectFind(0, objName) < 0)
+      ObjectCreate(0, objName, OBJ_RECTANGLE, 0, time_start, price_start, time_end, price_end);
+   //--- set line color
+   ObjectSetInteger(0, objName, OBJPROP_COLOR, box_color);
+   //--- set line display style
+   ObjectSetInteger(0, objName, OBJPROP_STYLE, STYLE_SOLID);
+   //--- set line width
+   ObjectSetInteger(0, objName, OBJPROP_WIDTH, width);
+}
+
+
+//+------------------------------- Draw Line -----------------------------------+
 void drawLine(string name, datetime  time_start, double price_start, datetime time_end, double price_end, int direction, string displayName, color iColor, int styleDot){
    string objname = name + TimeToString(time_start);
    if (ObjectFind(0, objname) < 0) {
