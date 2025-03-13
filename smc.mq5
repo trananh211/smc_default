@@ -56,6 +56,7 @@ int lastTimeH = 0;
 int lastTimeL = 0;
 double L, H, idmLow, idmHigh, L_idmLow, L_idmHigh , lastH, lastL, H_lastH, L_lastHH, H_lastLL, L_lastL, motherHigh, motherLow;
 double findHigh, findLow;
+MqlRates L_bar, H_bar;
 
 //bar indexes
 //datetime motherBar, puBar, puHBar, puLBar, idmLBar, idmHBar, HBar, LBar, lastHBar, lastLBar;
@@ -182,11 +183,22 @@ void firstArray(double price, double& array[], datetime time, datetime& arrayTim
    arrayTime[0] = time;
 }
 
+void firstZone(MqlRates& bar, PoiZone& array[]) {
+   ArrayResize(array, MathMin(ArraySize(array) + 1, 10));
+   array[0].high = bar.high;
+   array[0].low = bar.low;
+   array[0].open = bar.open;
+   array[0].close = bar.close;
+   array[0].time = bar.time;
+   array[0].mitigated = 0;
+}
+
 //#region define function
 void definedFunction() {
    int copied = CopyRates(_Symbol, PERIOD_CURRENT, 0, 100, waveRates);
    
    int firstBar = ArraySize(waveRates) - 1;
+   MqlRates Bar1 = waveRates[firstBar];
    double firstBarHigh     = waveRates[firstBar].high;
    double firstBarLow      = waveRates[firstBar].low;
    datetime firstBarTime   = waveRates[firstBar].time;
@@ -214,6 +226,20 @@ void definedFunction() {
    firstArray(0, arrChoLow, firstBarTime, arrChoLowTime);
    firstArray(0, arrBoHigh, firstBarTime, arrBoHighTime);
    firstArray(0, arrBoLow, firstBarTime, arrBoLowTime);
+   
+   // first Zone
+   firstZone(Bar1, zPoiBull);
+   firstZone(Bar1, zPoiBear);
+   firstZone(Bar1, zPoiExtremeBull);
+   firstZone(Bar1, zPoiExtremeBear);
+   firstZone(Bar1, zArrTop);
+   firstZone(Bar1, zArrBot);
+   firstZone(Bar1, zHighs);
+   firstZone(Bar1, zLows);
+   firstZone(Bar1, zIntSHighs);
+   firstZone(Bar1, zIntSLows);
+   firstZone(Bar1, zArrPbHigh);
+   firstZone(Bar1, zArrPbLow);
    
    high = iHigh(_Symbol, PERIOD_CURRENT, 1);
    low = iLow(_Symbol, PERIOD_CURRENT, 1);
@@ -308,20 +334,26 @@ void gannWave(){
    }
 }
 
+void showComment() {
+   //Print("Highs: "); ArrayPrint(Highs); ArrayPrint(zHighs);
+   //Print("Lows: "); ArrayPrint(Lows);ArrayPrint(zLows);
+   //Print("intSHighs: "); ArrayPrint(intSHighs); ArrayPrint(zIntSHighs);
+   //Print("intSLows: "); ArrayPrint(intSLows); ArrayPrint(zIntSLows);
+   //Print("arrTop: "); ArrayPrint(arrTop); ArrayPrint(zArrTop);
+   //Print("arrBot: "); ArrayPrint(arrBot); ArrayPrint(zArrBot);
+   Print("arrPbHigh: "); ArrayPrint(arrPbHigh); ArrayPrint(zArrPbHigh);
+   Print("arrPbLow: "); ArrayPrint(arrPbLow); ArrayPrint(zArrPbLow);
+   
+   //Print("arrBoHigh: "+(string) arrBoHigh[0]);
+   //Print("arrBoLow: "+(string) arrBoLow[0]);
+   //Print("arrChoHigh: "+(string) arrChoHigh[0]);
+   //Print("arrChoLow: "+(string) arrChoLow[0]);
+}
+
 void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isComment = false){
    
    if(isComment) {
-      Print("Highs: "); ArrayPrint(Highs);ArrayPrint(zHighs);
-      Print("Lows: "); ArrayPrint(Lows);ArrayPrint(zLows);
-      Print("arrTop: "); ArrayPrint(arrTop);
-      Print("arrBot: "); ArrayPrint(arrBot);
-      Print("arrPbHigh: "); ArrayPrint(arrPbHigh);
-      Print("arrPbLow: "); ArrayPrint(arrPbLow);
-      
-      //Print("arrBoHigh: "+(string) arrBoHigh[0]);
-      //Print("arrBoLow: "+(string) arrBoLow[0]);
-      //Print("arrChoHigh: "+(string) arrChoHigh[0]);
-      //Print("arrChoLow: "+(string) arrChoLow[0]);
+      showComment();
    }
    string text;
    text += "First: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
@@ -364,6 +396,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          H = bar2.high;
          HTime = bar2.time;
+         H_bar = bar2;
       }
    }
    if (bar3.low > bar2.low && bar2.low < bar1.low) { // tim thay swing low 
@@ -373,14 +406,15 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          L = bar2.low;
          LTime = bar2.time;
+         L_bar = bar2;
       }
    }
    
    if(sTrend == 1 && mTrend == 1) {
       // continue BOS 
       if (LastSwingMajor == -1 && bar1.high > arrTop[0] && arrTop[0] != arrBoHigh[0]) {
-         text += "\n 1.1. continue BOS, sTrend == 1 && mTrend == 1 && LastSwingMajor == -1 && bar1.high > arrTop[0] : "+ 
-         bar1.high +" > "+arrTop[0];
+         text += "\n 1.1. continue BOS, sTrend == 1 && mTrend == 1 && LastSwingMajor == -1 && bar1.high > arrTop[0] : "
+         + bar1.high +" > "+arrTop[0];
          text += "\n => Cap nhat: findLow = 0, idmHigh = Lows[0] = "+Lows[0]+" ; sTrend == 1; mTrend == 1; LastSwingMajor == 1;";
          
          updatePointStructure(arrTop[0], arrTopTime[0], arrBoHigh, arrBoHighTime, false);
@@ -442,7 +476,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          text += "\n => Cap nhat findLow = 1; L = bar1.low = "+ bar1.low;
          
          // active find Low
-         findLow = 1; L = bar1.low; LTime = bar1.time;
+         findLow = 1; 
+         L = bar1.low; LTime = bar1.time;
+         L_bar = bar1;
          findHigh = 0; H = 0;
       }
       
@@ -453,12 +489,12 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          text += "\n 1.5 sTrend == 1 && mTrend == 1 && LastSwingMajor == random && bar1.low < arrPbLow[0] :" + bar1.low + "<" + arrPbLow[0];
          text += "\n => Cap nhat => Ve line. sTrend = -1; mTrend = -1; LastSwingMajor = -1; findHigh = 0; idmLow = Highs[0]= "+ Highs[0];
          // draw choch Low
-         drawLine(I_CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], barTime, arrPbLow[0], 1, I_CHOCH_TEXT, clrRed, STYLE_SOLID);
+         drawLine(CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], barTime, arrPbLow[0], 1, CHOCH_TEXT, clrRed, STYLE_SOLID);
          
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          text += "\n => Cap nhat => POI Bearish : arrPbHigh[0] "+ arrPbHigh[0];
-         // update Extreme POI Bearish ????
-         updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
+         //// update Extreme POI Bearish ????
+         //updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
          
          LastSwingMajor = -1;
          L_idmLow = idmLow;
@@ -479,6 +515,8 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          // update Point HL
          if (L != 0 && L != arrPbLow[0]) {
             updatePointStructure(L, LTime, arrPbLow, arrPbLTime, false);
+            // update Zone
+            updatePointZone(L_bar, zArrPbLow, false, poi_limit);
             // update POI Extreme Bullish ????
             updateZoneToZone(zArrPbLow[0], zPoiExtremeBull, false, poi_limit);     
          }
@@ -503,12 +541,16 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
          
-         if (L != 0 && L != arrPbLow[0]) updatePointStructure(L, LTime, arrPbLow, arrPbLTime, false);
+         if (L != 0 && L != arrPbLow[0]) {
+            updatePointStructure(L, LTime, arrPbLow, arrPbLTime, false);
+            // update Zone
+            updatePointZone(L_bar, zArrPbLow, false, poi_limit);
+            // update POI Extreme Bullish
+            updateZoneToZone(zArrPbLow[0], zPoiExtremeBull, false, poi_limit);
+         }
          drawPointStructure(-1, arrPbLow[0], arrPbLTime[0], MAJOR_STRUCTURE, false, enabledDraw);
-         drawLine(I_CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, I_CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
+         drawLine(CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
          text += "\n => Cap nhat => POI Bullish : L = "+ L;
-         // update POI Extreme Bullish
-         updateZoneToZone(zArrPbLow[0], zPoiExtremeBull, false, poi_limit);
          
          L_idmHigh = idmHigh;
          L_idmHighTime = idmHighTime;
@@ -522,10 +564,10 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          text += "\n => Cap nhat => POI Low. sTrend = -1; mTrend = -1; LastSwingMajor = -1; findHigh = 0; idmLow = Highs[0] = "+Highs[0];
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          // draw choch low
-         drawLine(I_CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, I_CHOCH_TEXT, clrRed, STYLE_SOLID);
+         drawLine(CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, CHOCH_TEXT, clrRed, STYLE_SOLID);
          
-         // update POI Extreme Bearish
-         updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
+         //// update POI Extreme Bearish
+         //updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
          
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
@@ -545,8 +587,10 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          updatePointStructure(intSHighs[0], intSHighTime[0], arrTop, arrTopTime, false);
          
          // update POI Bearish
-         updateZoneToZone(zArrTop[0], zPoiBear, false, poi_limit);
-         
+         updateZoneToZone(zIntSHighs[0], zArrTop, false, poi_limit);
+         // cap nhat Zone
+         updateZoneToZone(zIntSHighs[0], zPoiBear, false, poi_limit);
+                  
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
          
@@ -561,9 +605,11 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             text += "=> Cap nhat: arrBot[0] = bar2.low = "+bar2.low+" ; sTrend == -1; mTrend == -1; LastSwingMajor == 1;";
             
             // Update ArrayBot[0]
-            if(arrBot[0] != bar2.low) 
+            if(arrBot[0] != bar2.low) {
                updatePointStructure(bar2.low, bar2.time, arrBot, arrBotTime, false);
-            
+               // cap nhat Zone
+               updatePointZone(bar2, zArrBot, false, poi_limit);
+            }
             sTrend = -1; mTrend = -1; LastSwingMajor = 1;
          }
 
@@ -573,9 +619,11 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             text += "=> Xoa label, Cap nhat: arrBot[0] = bar2.low = "+bar2.low+" ; sTrend == -1; mTrend == -1; LastSwingMajor == 1;";
             
             // Update ArrayBot[0]
-            if(arrBot[0] != bar2.low) 
+            if(arrBot[0] != bar2.low) {
                updatePointStructure(bar2.low, bar2.time, arrBot, arrBotTime, true);
-               
+               // cap nhat Zone
+               updatePointZone(bar2, zArrBot, false, poi_limit);
+            }
             sTrend = -1; mTrend = -1; LastSwingMajor = 1;   
          }
       }
@@ -586,13 +634,19 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          findHigh == 0 && bar1.high > idmLow) {
          text += "\n -3.4. Cross IDM Downtrend, sTrend == -1 && mTrend == -1 && LastSwingMajor == random && bar1.high > idmLow :" + bar1.high + ">" + idmLow;
          // cap nhat arPBLows
-         if(arrBot[0] != arrPbLow[0]) updatePointStructure(arrBot[0], arrBotTime[0], arrPbLow, arrPbLTime, false);
+         if(arrBot[0] != arrPbLow[0]){
+            updatePointStructure(arrBot[0], arrBotTime[0], arrPbLow, arrPbLTime, false);
+            // cap nhat Zone
+            updateZoneToZone(zArrBot[0], zArrPbLow, false, poi_limit);
+         } 
          drawPointStructure(-1, arrPbLow[0], arrPbLTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(IDM_TEXT, idmLowTime, idmLow, bar1.time, idmLow, -1, IDM_TEXT, clrRed, STYLE_DOT);
          text += "\n => Cap nhat findHigh = 1; H = bar1.high = "+ bar1.high;
          
          // active find High
-         findHigh = 1; H = bar1.high; HTime = bar1.time;
+         findHigh = 1; 
+         H = bar1.high; HTime = bar1.time;
+         H_bar = bar1;
          findLow = 0; L = 0;
       }
       
@@ -605,11 +659,11 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          text += "\n => Cap nhat => POI Bullish = arrPbLow[0] : "+ arrPbLow[0];
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
          
-         // update POI Extreme Bullish
-         updateZoneToZone(zArrPbLow[0], zPoiExtremeBull, false, poi_limit);
+         //// update POI Extreme Bullish ????
+         //updateZoneToZone(zArrPbLow[0], zPoiExtremeBull, false, poi_limit);
          
          // draw choch high
-         drawLine(I_CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, I_CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
+         drawLine(CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
          
          LastSwingMajor = 1;
          L_idmHigh = idmHigh;
@@ -628,14 +682,16 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          
          // update Point LH         
-         if (H != 0 && H != arrPbHigh[0]) updatePointStructure(H, HTime, arrPbHigh, arrPbHTime, false);
-         
+         if (H != 0 && H != arrPbHigh[0]) {
+            updatePointStructure(H, HTime, arrPbHigh, arrPbHTime, false);
+            // update Zone
+            updatePointZone(H_bar, zArrPbHigh, false, poi_limit);
+            //// update POI Extreme Bearish ????
+            //updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
+         }
          drawPointStructure(1, arrPbHigh[0], arrPbHTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(BOS_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, BOS_TEXT, clrRed, STYLE_SOLID);
          text += "\n => Cap nhat => POI Bearish H:" + H;
-         
-         // update POI Extreme Bearish
-         updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
          
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
@@ -650,13 +706,17 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          text += "\n -4.1 sTrend == -1 && mTrend == 1 && LastSwingMajor == 1 && bar1.low < arPbLow[0]";
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          
-         if (H != 0 && H != arrPbHigh[0]) updatePointStructure(H, HTime, arrPbHigh, arrPbHTime, false);
+         if (H != 0 && H != arrPbHigh[0]) {
+            updatePointStructure(H, HTime, arrPbHigh, arrPbHTime, false);
+            // update zone
+            updatePointZone(H_bar, zArrPbHigh, false, poi_limit);
+            // update POI Extreme Bearish
+            updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
+         }
          drawPointStructure(1, arrPbHigh[0], arrPbHTime[0], MAJOR_STRUCTURE, false, enabledDraw);
-         drawLine(I_CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, I_CHOCH_TEXT, clrRed, STYLE_SOLID);
+         drawLine(CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, CHOCH_TEXT, clrRed, STYLE_SOLID);
          
          text += "\n => Cap nhat => POI bearish H: "+H;
-         // update POI Extreme Bearish
-         updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
          
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
@@ -675,7 +735,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          updateZoneToZone(zArrPbLow[0], zPoiExtremeBull, false, poi_limit);
          
          // draw choch low
-         drawLine(I_CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, I_CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
+         drawLine(CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
 
          L_idmHigh = idmHigh;
          L_idmHighTime = idmHighTime;
@@ -688,16 +748,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
    if(isComment) {
       text += "\n Last: STrend: "+ sTrend + " - mTrend: "+mTrend+" - LastSwingMajor: "+LastSwingMajor+ " findHigh: "+findHigh+" - idmHigh: "+idmHigh+" findLow: "+findLow+" - idmLow: "+idmLow+" H: "+ H +" - L: "+L;
       Print(text);
-      Print("arrTop: "); ArrayPrint(arrTop);
-      Print("arrBot: "); ArrayPrint(arrBot);
-      Print("arrPbHigh: "); ArrayPrint(arrPbHigh);
-      Print("arrPbLow: "); ArrayPrint(arrPbLow);
-      
-      //Print("arrBoHigh: "+arrBoHigh[0]);
-      //Print("arrBoLow: "+arrBoLow[0]);
-      //Print("arrChoHigh: "+arrChoHigh[0]);
-      //Print("arrChoLow: "+arrChoLow[0]);
-      //Print("\n ");
+      showComment();
    }
 }
 
@@ -749,7 +800,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          drawPointStructure(1, bar2.high, bar2.time, GANN_STRUCTURE, false, enabledDraw);
          LastSwingMeter = -1;
          // cap nhat Zone
-         updatePointZone(bar2, zHighs, false);
+         updatePointZone(bar2, zHighs, false, 10);
       }
       // gann finding low
       if (LastSwingMeter == -1) {
@@ -762,7 +813,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
             drawPointStructure(1, bar2.high, bar2.time, GANN_STRUCTURE, true, enabledDraw);
             LastSwingMeter = -1;
             // cap nhat Zone
-            updatePointZone(bar2, zHighs, true);
+            updatePointZone(bar2, zHighs, true, 10);
          }
       }
       
@@ -788,7 +839,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          resultStructure = 1;
          textInternalHigh += "\n"+"## High 1 BOS --> Update: "+ "iTrend: "+iTrend + ", LastSwingInternal: "+ LastSwingInternal+", Update intSHighs[0]: "+bar2.high;
          // cap nhat Zone
-         updatePointZone(bar2, zIntSHighs, false);
+         updatePointZone(bar2, zIntSHighs, false, 10);
       }
       
       // HH 2
@@ -804,7 +855,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          resultStructure = 2;
          textInternalHigh += "\n"+"## High 2 --> Update: "+ "iTrend: "+iTrend + ", LastSwingInternal: "+ LastSwingInternal+", Update intSHighs[0]: "+bar2.high + ", Xoa intSHighs[0] old: "+intSHighs[0];
          // cap nhat Zone
-         updatePointZone(bar2, zIntSHighs, true);
+         updatePointZone(bar2, zIntSHighs, true, 10);
          
       }
       
@@ -820,7 +871,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          textInternalHigh += "\n"+"## High 3 CHoCH --> Update: "+ "iTrend: "+iTrend + ", LastSwingInternal: "+ LastSwingInternal+", Update intSHighs[0]: "+bar2.high;
          
          // cap nhat Zone
-         updatePointZone(bar2, zIntSHighs, false);
+         updatePointZone(bar2, zIntSHighs, false, 10);
       }
       
       // DONE 4 
@@ -835,7 +886,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          textInternalHigh += "\n"+ "## High 4 --> Update: "+ "iTrend: "+iTrend + ", LastSwingInternal: "+ LastSwingInternal+", Update intSHighs[0]: "+bar2.high;
          
          // cap nhat Zone
-         updatePointZone(bar2, zIntSHighs, false);
+         updatePointZone(bar2, zIntSHighs, false, 10);
       }
       
       // DONE 5
@@ -852,7 +903,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          textInternalHigh += "\n"+"## High 5 CHoCH --> Update: "+ "iTrend: "+iTrend + ", LastSwingInternal: "+ LastSwingInternal+", Update intSHighs[0]: "+bar2.high+", Xoa intSHighs[0] old: "+intSHighs[0];
          
          // cap nhat Zone
-         updatePointZone(bar2, zIntSHighs, true);
+         updatePointZone(bar2, zIntSHighs, true, 10);
       }
       if( isComment) {
          Print(textInternalHigh);
@@ -871,7 +922,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          drawPointStructure(-1, bar2.low, bar2.time, GANN_STRUCTURE, false, enabledDraw);
          LastSwingMeter = 1;
          // cap nhat Zone
-         updatePointZone(bar2, zLows, false);
+         updatePointZone(bar2, zLows, false, 10);
       }
       // gann finding high
       if (LastSwingMeter == 1) {
@@ -884,7 +935,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
             drawPointStructure(-1, bar2.low, bar2.time, GANN_STRUCTURE, true, enabledDraw);
             LastSwingMeter = 1;
             // cap nhat Zone
-            updatePointZone(bar2, zLows, true);
+            updatePointZone(bar2, zLows, true, 10);
          }
       }
       if (isComment) {
@@ -908,7 +959,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          resultStructure = -1;
          textInternalLow += "\n"+("## Low 1 BOS --> Update: "+ "iTrend: "+iTrend + ", LastSwingInternal: "+ LastSwingInternal+", Update intSLows[0]: "+bar2.low);
          // cap nhat Zone
-         updatePointZone(bar2, zIntSLows, false);
+         updatePointZone(bar2, zIntSLows, false, 10);
       }
       
       // LL
@@ -924,7 +975,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          resultStructure = -2;
          textInternalLow += "\n"+("## Low 2 --> Update: "+ "iTrend: "+iTrend + ", LastSwingInternal: "+ LastSwingInternal+", Update intSLows[0]: "+bar2.low +", Xoa intSLows[0] old: "+intSLows[0]);
          // cap nhat Zone
-         updatePointZone(bar2, zIntSLows, true);
+         updatePointZone(bar2, zIntSLows, true, 10);
       }
       
       // DONE 3
@@ -938,7 +989,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          resultStructure = -3;
          textInternalLow += "\n"+("## Low 3 CHoCH --> Update: "+ "iTrend: "+iTrend + ", LastSwingInternal: "+ LastSwingInternal+", Update intSLows[0]: "+bar2.low);
          // cap nhat Zone
-         updatePointZone(bar2, zIntSLows, false);
+         updatePointZone(bar2, zIntSLows, false, 10);
       }
       
       // DONE 4
@@ -951,7 +1002,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          resultStructure = -4;
          textInternalLow += "\n"+("## Low 4 --> Update: "+ "iTrend: "+iTrend + ", LastSwingInternal: "+ LastSwingInternal+", Update intSLows[0]: "+bar2.low);
          // cap nhat Zone
-         updatePointZone(bar2, zIntSLows, false);
+         updatePointZone(bar2, zIntSLows, false, 10);
       }
       
       // DONE 5
@@ -967,7 +1018,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          resultStructure = -5;
          textInternalLow += "\n"+("## Low 5 CHoCH --> Update: "+ "iTrend: "+iTrend + ", LastSwingInternal: "+ LastSwingInternal+", Update intSLows[0]: "+bar2.low+", Xoa intSLows[0] old: "+intSLows[0]);
          // cap nhat Zone
-         updatePointZone(bar2, zIntSLows, true);
+         updatePointZone(bar2, zIntSLows, true, 10);
       }
       if(isComment) {
          Print(textInternalLow);
