@@ -379,7 +379,8 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
    if(sTrend == 1 && mTrend == 1) {
       // continue BOS 
       if (LastSwingMajor == -1 && bar1.high > arrTop[0] && arrTop[0] != arrBoHigh[0]) {
-         text += "\n 1.1. continue BOS, sTrend == 1 && mTrend == 1 && LastSwingMajor == -1 && bar1.high > arrTop[0] : "+ bar1.high +" > "+arrTop[0];
+         text += "\n 1.1. continue BOS, sTrend == 1 && mTrend == 1 && LastSwingMajor == -1 && bar1.high > arrTop[0] : "+ 
+         bar1.high +" > "+arrTop[0];
          text += "\n => Cap nhat: findLow = 0, idmHigh = Lows[0] = "+Lows[0]+" ; sTrend == 1; mTrend == 1; LastSwingMajor == 1;";
          
          updatePointStructure(arrTop[0], arrTopTime[0], arrBoHigh, arrBoHighTime, false);
@@ -387,7 +388,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          // update POI Bullish
          updateZoneToZone(zIntSLows[0], zArrBot, false, poi_limit);
          // cap nhat Zone
-         updateZoneToZone(zArrBot[0], zPoiBull, false, poi_limit);
+         updateZoneToZone(zIntSLows[0], zPoiBull, false, poi_limit);
          
          L_idmHigh = idmHigh;
          L_idmHighTime = idmHighTime;
@@ -405,7 +406,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             if(arrTop[0] != bar2.high) {
                updatePointStructure(bar2.high, bar2.time, arrTop, arrTopTime, false);
                // cap nhat Zone
-               updatePointZone(bar2, arrTop, false, poi_limit);
+               updatePointZone(bar2, zArrTop, false, poi_limit);
             } 
             
             sTrend = 1; mTrend = 1; LastSwingMajor = -1;
@@ -419,7 +420,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             if(arrTop[0] != bar2.high) {
                updatePointStructure(bar2.high, bar2.time, arrTop, arrTopTime, true);
                // cap nhat Zone
-               updatePointZone(bar2, arrTop, false, poi_limit);
+               updatePointZone(bar2, zArrTop, false, poi_limit);
             }
             sTrend = 1; mTrend = 1; LastSwingMajor = -1;
          }
