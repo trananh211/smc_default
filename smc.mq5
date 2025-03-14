@@ -303,7 +303,8 @@ void realGannWave() {
    Print("------------------------------");
    int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
    
-   updatePointTopBot(bar1, bar2, bar3, enabledComment);
+   updatePointTopBot(bar1, bar2, bar3, disableComment);
+   getZoneValid();
    drawZone(bar1);
 }
 
@@ -328,9 +329,30 @@ void gannWave(){
       bar3 = waveRates[j+2];
       
       int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
-      updatePointTopBot(bar1, bar2, bar3, enabledComment);
+      updatePointTopBot(bar1, bar2, bar3, disableComment);
+      getZoneValid();
       drawZone(bar1);
       Print(" --- End ---");
+   }
+}
+
+void getZoneValid() {
+   showComment();
+   // check extreme POI 
+   if (ArraySize(zArrPbHigh) > 1) {
+      int indexH;
+      for(int i=0;i<ArraySize(zArrPbHigh) - 1;i++) {
+         Print("Array bar for "+_Symbol+" "+Timeframe+": ",zArrPbHigh[i].time,", ",  zArrPbHigh[i].open,", ",
+                                      zArrPbHigh[i].high,", ",  zArrPbHigh[i].low,", ",
+                                      zArrPbHigh[i].close,", ");
+                                      
+         indexH = iBarShift(_Symbol, Timeframe, zArrPbHigh[i].time, true);
+         if (indexH != -1) {
+            Print("Current bar for "+_Symbol+" "+Timeframe+": ",iTime(_Symbol,Timeframe,indexH),", ",  iOpen(_Symbol,Timeframe,indexH),", ",
+                                      iHigh(_Symbol,Timeframe,indexH),", ",  iLow(_Symbol,Timeframe,indexH),", ",
+                                      iClose(_Symbol,Timeframe,indexH),", ", iVolume(_Symbol,Timeframe,indexH));
+         }
+      }
    }
 }
 
@@ -772,20 +794,20 @@ void drawZone(MqlRates& bar1) {
       drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, -1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
    }
    
-   // Zone.
-   if (sTrend == 1) { // care PB Low
-      for(int i=0;i<ArraySize(zArrPbLow) - 1;i++) {
-         Print("zone "+ i);
-         drawBox("POI", zArrPbLow[i].time, zArrPbLow[i].low, bar1.time, zArrPbLow[i].high,1, clrGreen, 1);
-      }
-   }
-   
-   if (sTrend == -1) { // care PB High
-      for(int i=0;i<ArraySize(zArrPbHigh) - 1;i++) {
-         Print("zone "+ i);
-         drawBox("POI", zArrPbHigh[i].time, zArrPbHigh[i].high, bar1.time, zArrPbHigh[i].low,1, clrPink, 1);
-      }
-   }  
+//   // Zone.
+//   if (sTrend == 1) { // care PB Low
+//      for(int i=0;i<ArraySize(zArrPbLow) - 1;i++) {
+//         Print("zone "+ i);
+//         drawBox("POI", zArrPbLow[i].time, zArrPbLow[i].low, bar1.time, zArrPbLow[i].high,1, clrDarkGreen, 1);
+//      }
+//   }
+//   
+//   if (sTrend == -1) { // care PB High
+//      for(int i=0;i<ArraySize(zArrPbHigh) - 1;i++) {
+//         Print("zone "+ i);
+//         drawBox("POI", zArrPbHigh[i].time, zArrPbHigh[i].high, bar1.time, zArrPbHigh[i].low,1, clrMaroon, 1);
+//      }
+//   }  
 }
 
 //---
@@ -1156,6 +1178,10 @@ void drawBox(string name, datetime time_start, double price_start, datetime time
    ObjectSetInteger(0, objName, OBJPROP_COLOR, box_color);
    //--- set line display style
    ObjectSetInteger(0, objName, OBJPROP_STYLE, STYLE_SOLID);
+   //--- enable (true) or disable (false) the mode of filling the rectangle 
+   ObjectSetInteger(0,objName,OBJPROP_FILL, true); 
+   //--- display in the foreground (false) or background (true) 
+   ObjectSetInteger(0,objName,OBJPROP_BACK,true); 
    //--- set line width
    ObjectSetInteger(0, objName, OBJPROP_WIDTH, width);
 }
