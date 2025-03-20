@@ -70,10 +70,12 @@ struct PoiZone {
    double high, low, open, close;
    datetime time;
    int mitigated;
+   double priceKey;
+   datetime timeKey;
 };
 PoiZone zHighs[], zLows[], zIntSHighs[], zIntSLows[], zArrTop[], zArrBot[];
 PoiZone zArrPbHigh[], zArrPbLow[];
-PoiZone zPoiExtremeBull[], zPoiExtremeBear[], zPoiBull[], zPoiBear[];
+PoiZone zPoiExtremeLow[], zPoiExtremeHigh[], zPoiLow[], zPoiHigh[];
 
 //---
 //--- -----------------------------------------------------------------
@@ -191,6 +193,8 @@ void firstZone(MqlRates& bar, PoiZone& array[]) {
    array[0].close = bar.close;
    array[0].time = bar.time;
    array[0].mitigated = 0;
+   array[0].priceKey = -1;
+   array[0].timeKey = -1;
 }
 
 //#region define function
@@ -228,10 +232,10 @@ void definedFunction() {
    firstArray(0, arrBoLow, firstBarTime, arrBoLowTime);
    
    // first Zone
-   firstZone(Bar1, zPoiBull);
-   firstZone(Bar1, zPoiBear);
-   firstZone(Bar1, zPoiExtremeBull);
-   firstZone(Bar1, zPoiExtremeBear);
+   firstZone(Bar1, zPoiLow);
+   firstZone(Bar1, zPoiHigh);
+   firstZone(Bar1, zPoiExtremeLow);
+   firstZone(Bar1, zPoiExtremeHigh);
    firstZone(Bar1, zArrTop);
    firstZone(Bar1, zArrBot);
    firstZone(Bar1, zHighs);
@@ -295,6 +299,41 @@ int textCenter(int left, int right) {
   return (left + right) / 2;
 }
 
+string inInfoBar(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3) {
+   string text = " Bar1 high: "+ (string) bar1.high +" - low: "+ (string) bar1.low + " --- "+" Bar2 high: "+ (string) bar2.high +" - low: "+ (string) bar2.low+ " --- "+" Bar3 high: "+ (string) bar3.high +" - low: "+ (string) bar3.low; 
+   return text;
+}
+
+void showComment() {
+   //Print("Highs: "); ArrayPrint(Highs); 
+   //Print("Lows: "); ArrayPrint(Lows);
+   //Print("intSHighs: "); ArrayPrint(intSHighs); 
+   //Print("intSLows: "); ArrayPrint(intSLows); 
+   //Print("arrTop: "); ArrayPrint(arrTop); 
+   //Print("arrBot: "); ArrayPrint(arrBot); 
+   Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
+   Print("arrPbLow: "); ArrayPrint(arrPbLow);
+
+   
+   //Print("arrBoHigh: "+(string) arrBoHigh[0]);
+   //Print("arrBoLow: "+(string) arrBoLow[0]);
+   //Print("arrChoHigh: "+(string) arrChoHigh[0]);
+   //Print("arrChoLow: "+(string) arrChoLow[0]);
+   
+   //ArrayPrint(zHighs);
+   //ArrayPrint(zLows);
+   //ArrayPrint(zIntSHighs);
+   //ArrayPrint(zIntSLows);
+   //ArrayPrint(zArrTop);
+   //ArrayPrint(zArrBot);
+   //Print("zArrPbHigh"); ArrayPrint(zArrPbHigh); 
+   //Print("zArrPbLow"); ArrayPrint(zArrPbLow);
+   
+   Print("zPoiExtremeHigh: "); ArrayPrint(zPoiExtremeHigh);
+   Print("zPoiExtremeLow: "); ArrayPrint(zPoiExtremeLow);
+   
+}
+
 void realGannWave() {
    MqlRates bar1, bar2, bar3;
    bar1 = rates[1];
@@ -302,28 +341,20 @@ void realGannWave() {
    bar3 = rates[3];
    Print("------------------------------");
    int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
-   
    updatePointTopBot(bar1, bar2, bar3, disableComment);
+   
    getZoneValid();
    drawZone(bar1);
-}
-
-string inInfoBar(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3) {
-   string text = " Bar1 high: "+ (string) bar1.high +" - low: "+ (string) bar1.low + " --- "+" Bar2 high: "+ (string) bar2.high +" - low: "+ (string) bar2.low+ " --- "+" Bar3 high: "+ (string) bar3.high +" - low: "+ (string) bar3.low; 
-   return text;
 }
 
 void gannWave(){
    MqlRates bar1, bar2, bar3; 
    // danh dau vi tri bat dau
    createObj(waveRates[ArraySize(waveRates) - 1].time, waveRates[ArraySize(waveRates) - 1].low, 238, -1, clrRed, "Start");
-   // 
    for (int j = ArraySize(waveRates) - 3; j >=0; j--){
       
       Print("No:" + (string) j);
       Print(inInfoBar(bar1, bar2, bar3));
-      //Print("Highs[]: " + ArraySize(Highs)); ArrayPrint(Highs);
-      //Print("Lows[]: " + ArraySize(Lows)); ArrayPrint(Lows);
       bar1 = waveRates[j];
       bar2 = waveRates[j+1];
       bar3 = waveRates[j+2];
@@ -332,44 +363,139 @@ void gannWave(){
       updatePointTopBot(bar1, bar2, bar3, disableComment);
       getZoneValid();
       drawZone(bar1);
-      Print(" --- End ---");
+      Print(" ------------------------------------------------------ End ---------------------------------------------------------");
    }
+   // danh dau vi tri ket thuc
+   createObj(waveRates[0].time, waveRates[0].low, 238, -1, clrRed, "Stop");
 }
 
 void getZoneValid() {
    showComment();
-   // check extreme POI 
-   if (ArraySize(zArrPbHigh) > 1) {
-      int indexH;
-      for(int i=0;i<ArraySize(zArrPbHigh) - 1;i++) {
-         Print("Array bar for "+_Symbol+" "+Timeframe+": ",zArrPbHigh[i].time,", ",  zArrPbHigh[i].open,", ",
-                                      zArrPbHigh[i].high,", ",  zArrPbHigh[i].low,", ",
-                                      zArrPbHigh[i].close,", ");
-                                      
-         indexH = iBarShift(_Symbol, Timeframe, zArrPbHigh[i].time, true);
-         if (indexH != -1) {
-            Print("Current bar for "+_Symbol+" "+Timeframe+": ",iTime(_Symbol,Timeframe,indexH),", ",  iOpen(_Symbol,Timeframe,indexH),", ",
-                                      iHigh(_Symbol,Timeframe,indexH),", ",  iLow(_Symbol,Timeframe,indexH),", ",
-                                      iClose(_Symbol,Timeframe,indexH),", ", iVolume(_Symbol,Timeframe,indexH));
-         }
+   setValueToZone(1, zArrPbHigh, zPoiExtremeHigh);
+   setValueToZone(-1, zArrPbLow, zPoiExtremeLow);
+}
+
+void setValueToZone(int _type,PoiZone& zoneDefault[], PoiZone& zoneTarget[]){
+   // type = 1 is High, -1 is Low
+   double priceKey = (_type == 1) ? zoneDefault[0].high : zoneDefault[0].low;
+   datetime timeKey = zoneDefault[0].time;
+   // check default has new value?? 
+   if (ArraySize(zoneDefault) > 1 && priceKey != zoneTarget[0].priceKey && timeKey != zoneTarget[0].timeKey && priceKey != 0) {
+      Print( "-- " + (( _type == 1)? "Extreme High" : "Extreme Low") +"Xuat hien value: "+priceKey+" co time: "+timeKey+" moi. them vao Extreme Zone");
+      int indexH; 
+      MqlRates barH;
+      
+      int result = -1;
+      indexH = iBarShift(_Symbol, Timeframe, timeKey, true);
+      if (indexH != -1) {
+         result = isFVG(indexH, _type); // High is type = 1 or Low is type = -1
+         // set Value to barH
+         getValueBar(barH, (result != -1) ? result : indexH);
+         updatePointZone(barH, zoneTarget, false, poi_limit, priceKey, timeKey);
+         
+      } else {
+         Print("Khong lam gi");
       }
+      
    }
 }
 
-void showComment() {
-   //Print("Highs: "); ArrayPrint(Highs); ArrayPrint(zHighs);
-   //Print("Lows: "); ArrayPrint(Lows);ArrayPrint(zLows);
-   //Print("intSHighs: "); ArrayPrint(intSHighs); ArrayPrint(zIntSHighs);
-   //Print("intSLows: "); ArrayPrint(intSLows); ArrayPrint(zIntSLows);
-   //Print("arrTop: "); ArrayPrint(arrTop); ArrayPrint(zArrTop);
-   //Print("arrBot: "); ArrayPrint(arrBot); ArrayPrint(zArrBot);
-   Print("arrPbHigh: "); ArrayPrint(arrPbHigh); ArrayPrint(zArrPbHigh);
-   Print("arrPbLow: "); ArrayPrint(arrPbLow); ArrayPrint(zArrPbLow);
+//--- Set all value Index to Bar Default
+void getValueBar(MqlRates& bar, int index) {
+   bar.high = iHigh(_Symbol, Timeframe, index);
+   bar.low = iLow(_Symbol, Timeframe, index);
+   bar.open = iOpen(_Symbol, Timeframe, index);
+   bar.close = iClose(_Symbol, Timeframe, index);
+   bar.time = iTime(_Symbol, Timeframe, index);
+   //Print("- Bar -"+index + " - "+ " High: "+ bar.high+" Low: "+bar.low + " Time: "+ bar.time);
+}
+
+//--- Return position bar on chart
+int isFVG(int index, int type){ // type = 1 is High (Bearish) or type = -1 is Low (Bullish) 
+   string text = "-------------- Check FVG";
+   int result = -1;
+   bool stop = false;
+   MqlRates bar1, bar2, bar3;
+   int i = 0;
+   while(stop == false && index >=0) {
+      text += "\n Number " + i;
+      // gia tri lay tu xa ve gan 
+      getValueBar(bar1, index-2);
+      getValueBar(bar2, index-1);
+      getValueBar(bar3, index); // Bar current
+      text += "\n bar 1: "+ " High: "+ bar1.high + " Low: "+ bar1.low;
+      text += "\n bar 2: "+ " High: "+ bar2.high + " Low: "+ bar2.low;
+      text += "\n bar 3: "+ " High: "+ bar3.high + " Low: "+ bar3.low;
+      if (( type == -1 && bar1.high > arrTop[0]) || (type == 1 && bar1.low < arrBot[0])) { // gia vuot qua dinh gan nhat. Bo qua
+         text += "\n gia vuot qua dinh, day gan nhat. Bo qua";
+         break;
+      }
+      if (type == -1) { // Bull FVG
+         if (  bar1.low > bar3.high && // has space
+               bar2.close > bar3.high && bar1.close > bar1.open && bar3.close > bar3.open // is Green Bar
+            ) {
+            result = index;
+            stop == true;
+            text += "\n Bull FVG: Tim thay nen co FVG. High= "+ bar1.high +" Low= "+ bar1.low;
+            break;
+         }
+      } else if (type == 1) { // Bear FVG 
+         if (
+            bar1.high < bar3.low && // has space
+            bar2.close < bar3.low && bar1.close < bar1.open && bar3.close < bar3.open // is Red Bar
+         ) {
+            result = index;
+            stop == true;
+            text += "\n Bear FVG: Tim thay nen co FVG. High= "+ bar1.high +" Low= "+ bar1.low;
+            break;
+         }
+      }
+      if (stop == false) {
+         i++;
+         index--;
+      }
+   }
+   Print(text);
+   return result;
+}
+
+void drawZone(MqlRates& bar1) {
+   // IDM Live 
+   if (sTrend == 1 && findLow == 0 && L_idmHigh != 0) {
+      if (L_idmHigh > 0) {
+         deleteObj(L_idmHighTime, L_idmHigh, 0, "");
+         deleteLine(L_idmHighTime, L_idmHigh, IDM_TEXT_LIVE);
+         deleteObj(L_idmHighTime, L_idmHigh, 0, IDM_TEXT_LIVE);
+      }
+      drawLine(IDM_TEXT_LIVE, idmHighTime, idmHigh, bar1.time, idmHigh, 1, IDM_TEXT_LIVE, clrAliceBlue, STYLE_DOT);
+   }
+   if (sTrend == -1 && findHigh == 0 && L_idmLow != 0) {
+      if (L_idmLow > 0) {
+         deleteObj(L_idmLowTime, L_idmLow, 0, "");
+         deleteLine(L_idmLowTime, L_idmLow, IDM_TEXT_LIVE);
+         deleteObj(L_idmLowTime, L_idmLow, 0, IDM_TEXT_LIVE);
+      }
+      drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, -1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
+   }
    
-   //Print("arrBoHigh: "+(string) arrBoHigh[0]);
-   //Print("arrBoLow: "+(string) arrBoLow[0]);
-   //Print("arrChoHigh: "+(string) arrChoHigh[0]);
-   //Print("arrChoLow: "+(string) arrChoLow[0]);
+   // Zone.
+   if (
+      //sTrend == 1 && 
+      ArraySize(zPoiExtremeHigh) > 0) { // care PB Low
+      for(int i=0;i<ArraySize(zPoiExtremeHigh) - 1;i++) {
+         //Print("zone "+ i);
+         drawBox("POI", zPoiExtremeHigh[i].time, zPoiExtremeHigh[i].low, bar1.time, zPoiExtremeHigh[i].high,1, clrMaroon, 1);
+      }
+   }
+   
+   if (
+      //sTrend == -1 && 
+      ArraySize(zPoiExtremeLow) > 0) { // care PB High
+      for(int i=0;i<ArraySize(zPoiExtremeLow) - 1;i++) {
+         //Print("zone "+ i);
+         drawBox("POI", zPoiExtremeLow[i].time, zPoiExtremeLow[i].high, bar1.time, zPoiExtremeLow[i].low,1, clrDarkGreen, 1);
+      }
+   }  
 }
 
 void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isComment = false){
@@ -444,7 +570,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          // update POI Bullish
          updateZoneToZone(zIntSLows[0], zArrBot, false, poi_limit);
          // cap nhat Zone
-         updateZoneToZone(zIntSLows[0], zPoiBull, false, poi_limit);
+         updateZoneToZone(zIntSLows[0], zPoiLow, false, poi_limit);
          
          L_idmHigh = idmHigh;
          L_idmHighTime = idmHighTime;
@@ -516,7 +642,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          updatePointStructure(arrPbLow[0], arrPbLTime[0], arrChoLow, arrChoLowTime, false);
          text += "\n => Cap nhat => POI Bearish : arrPbHigh[0] "+ arrPbHigh[0];
          //// update Extreme POI Bearish ????
-         //updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
+         //updateZoneToZone(zArrPbHigh[0], zPoiExtremeHigh, false, poi_limit);
          
          LastSwingMajor = -1;
          L_idmLow = idmLow;
@@ -540,7 +666,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             // update Zone
             updatePointZone(L_bar, zArrPbLow, false, poi_limit);
             // update POI Extreme Bullish ????
-            updateZoneToZone(zArrPbLow[0], zPoiExtremeBull, false, poi_limit);     
+            updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);     
          }
          text += "\n => cap nhat : POI Bullish L : "+L;
          
@@ -568,7 +694,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             // update Zone
             updatePointZone(L_bar, zArrPbLow, false, poi_limit);
             // update POI Extreme Bullish
-            updateZoneToZone(zArrPbLow[0], zPoiExtremeBull, false, poi_limit);
+            updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);
          }
          drawPointStructure(-1, arrPbLow[0], arrPbLTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
@@ -589,7 +715,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          drawLine(CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, CHOCH_TEXT, clrRed, STYLE_SOLID);
          
          //// update POI Extreme Bearish
-         //updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
+         //updateZoneToZone(zArrPbHigh[0], zPoiExtremeHigh, false, poi_limit);
          
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
@@ -611,7 +737,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          // update POI Bearish
          updateZoneToZone(zIntSHighs[0], zArrTop, false, poi_limit);
          // cap nhat Zone
-         updateZoneToZone(zIntSHighs[0], zPoiBear, false, poi_limit);
+         updateZoneToZone(zIntSHighs[0], zPoiHigh, false, poi_limit);
                   
          L_idmLow = idmLow;
          L_idmLowTime = idmLowTime;
@@ -682,7 +808,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
          
          //// update POI Extreme Bullish ????
-         //updateZoneToZone(zArrPbLow[0], zPoiExtremeBull, false, poi_limit);
+         //updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);
          
          // draw choch high
          drawLine(CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
@@ -709,7 +835,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             // update Zone
             updatePointZone(H_bar, zArrPbHigh, false, poi_limit);
             //// update POI Extreme Bearish ????
-            //updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
+            //updateZoneToZone(zArrPbHigh[0], zPoiExtremeHigh, false, poi_limit);
          }
          drawPointStructure(1, arrPbHigh[0], arrPbHTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(BOS_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, BOS_TEXT, clrRed, STYLE_SOLID);
@@ -733,7 +859,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             // update zone
             updatePointZone(H_bar, zArrPbHigh, false, poi_limit);
             // update POI Extreme Bearish
-            updateZoneToZone(zArrPbHigh[0], zPoiExtremeBear, false, poi_limit);
+            updateZoneToZone(zArrPbHigh[0], zPoiExtremeHigh, false, poi_limit);
          }
          drawPointStructure(1, arrPbHigh[0], arrPbHTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, CHOCH_TEXT, clrRed, STYLE_SOLID);
@@ -754,7 +880,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
          
          // update POI Extreme Bullish
-         updateZoneToZone(zArrPbLow[0], zPoiExtremeBull, false, poi_limit);
+         updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);
          
          // draw choch low
          drawLine(CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
@@ -772,42 +898,6 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
       Print(text);
       showComment();
    }
-}
-
-
-void drawZone(MqlRates& bar1) {
-   // IDM Live 
-   if (sTrend == 1 && findLow == 0 && L_idmHigh != 0) {
-      if (L_idmHigh > 0) {
-         deleteObj(L_idmHighTime, L_idmHigh, 0, "");
-         deleteLine(L_idmHighTime, L_idmHigh, IDM_TEXT_LIVE);
-         deleteObj(L_idmHighTime, L_idmHigh, 0, IDM_TEXT_LIVE);
-      }
-      drawLine(IDM_TEXT_LIVE, idmHighTime, idmHigh, bar1.time, idmHigh, 1, IDM_TEXT_LIVE, clrAliceBlue, STYLE_DOT);
-   }
-   if (sTrend == -1 && findHigh == 0 && L_idmLow != 0) {
-      if (L_idmLow > 0) {
-         deleteObj(L_idmLowTime, L_idmLow, 0, "");
-         deleteLine(L_idmLowTime, L_idmLow, IDM_TEXT_LIVE);
-         deleteObj(L_idmLowTime, L_idmLow, 0, IDM_TEXT_LIVE);
-      }
-      drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, -1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
-   }
-   
-//   // Zone.
-//   if (sTrend == 1) { // care PB Low
-//      for(int i=0;i<ArraySize(zArrPbLow) - 1;i++) {
-//         Print("zone "+ i);
-//         drawBox("POI", zArrPbLow[i].time, zArrPbLow[i].low, bar1.time, zArrPbLow[i].high,1, clrDarkGreen, 1);
-//      }
-//   }
-//   
-//   if (sTrend == -1) { // care PB High
-//      for(int i=0;i<ArraySize(zArrPbHigh) - 1;i++) {
-//         Print("zone "+ i);
-//         drawBox("POI", zArrPbHigh[i].time, zArrPbHigh[i].high, bar1.time, zArrPbHigh[i].low,1, clrMaroon, 1);
-//      }
-//   }  
 }
 
 //---
@@ -1123,7 +1213,7 @@ void updateZoneToZone(PoiZone& zone, PoiZone& array[], bool del, int limit = 20)
    array[0] = zone;
 }
 
-void updatePointZone(MqlRates& bar, PoiZone& array[], bool del, int limit = 30) {
+void updatePointZone(MqlRates& bar, PoiZone& array[], bool del, int limit = 30, double priceKey = -1, datetime timeKey = -1) {
    if (ArraySize(array) >= 1 && del == true) {
       // cap nhat lai arPrice
       ArrayRemove(array, 0, 1);
@@ -1141,6 +1231,8 @@ void updatePointZone(MqlRates& bar, PoiZone& array[], bool del, int limit = 30) 
    array[0].close = bar.close;
    array[0].time = bar.time;
    array[0].mitigated = 0;
+   array[0].priceKey = priceKey;
+   array[0].timeKey = timeKey;
 }
 
 void updatePointStructure(double priceNew, double timeNew, double& arPrice[], datetime& arTime[], bool del, int limit = 10) {
