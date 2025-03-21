@@ -388,11 +388,13 @@ void setValueToZone(int _type,PoiZone& zoneDefault[], PoiZone& zoneTarget[]){
       int result = -1;
       indexH = iBarShift(_Symbol, Timeframe, timeKey, true);
       if (indexH != -1) {
+         // result = -1 => is nothing; result = 0 => is Default; result = index => update
          result = isFVG(indexH, _type); // High is type = 1 or Low is type = -1
          // set Value to barH
-         getValueBar(barH, (result != -1) ? result : indexH);
-         updatePointZone(barH, zoneTarget, false, poi_limit, priceKey, timeKey);
-         
+         if (result != -1) {
+            getValueBar(barH, (result != 0) ? result : indexH);
+            updatePointZone(barH, zoneTarget, false, poi_limit, priceKey, timeKey);
+         }
       } else {
          Print("Khong lam gi");
       }
@@ -413,6 +415,7 @@ void getValueBar(MqlRates& bar, int index) {
 //--- Return position bar on chart
 int isFVG(int index, int type){ // type = 1 is High (Bearish) or type = -1 is Low (Bullish) 
    string text = "-------------- Check FVG";
+   int indexOrigin = index;
    int result = -1;
    bool stop = false;
    MqlRates bar1, bar2, bar3;
@@ -428,6 +431,8 @@ int isFVG(int index, int type){ // type = 1 is High (Bearish) or type = -1 is Lo
       text += "\n bar 3: "+ " High: "+ bar3.high + " Low: "+ bar3.low;
       if (( type == -1 && bar1.high > arrTop[0]) || (type == 1 && bar1.low < arrBot[0])) { // gia vuot qua dinh gan nhat. Bo qua
          text += "\n gia vuot qua dinh, day gan nhat. Bo qua";
+         result = 0;
+         stop = true;
          break;
       }
       if (type == -1) { // Bull FVG
@@ -666,7 +671,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             // update Zone
             updatePointZone(L_bar, zArrPbLow, false, poi_limit);
             // update POI Extreme Bullish ????
-            updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);     
+            //updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);     
          }
          text += "\n => cap nhat : POI Bullish L : "+L;
          
@@ -694,7 +699,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             // update Zone
             updatePointZone(L_bar, zArrPbLow, false, poi_limit);
             // update POI Extreme Bullish
-            updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);
+            //updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);
          }
          drawPointStructure(-1, arrPbLow[0], arrPbLTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
@@ -859,7 +864,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             // update zone
             updatePointZone(H_bar, zArrPbHigh, false, poi_limit);
             // update POI Extreme Bearish
-            updateZoneToZone(zArrPbHigh[0], zPoiExtremeHigh, false, poi_limit);
+            //updateZoneToZone(zArrPbHigh[0], zPoiExtremeHigh, false, poi_limit);
          }
          drawPointStructure(1, arrPbHigh[0], arrPbHTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(CHOCH_TEXT, arrPbLTime[0], arrPbLow[0], bar1.time, arrPbLow[0], 1, CHOCH_TEXT, clrRed, STYLE_SOLID);
@@ -880,7 +885,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          updatePointStructure(arrPbHigh[0], arrPbHTime[0], arrChoHigh, arrChoHighTime, false);
          
          // update POI Extreme Bullish
-         updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);
+         //updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);
          
          // draw choch low
          drawLine(CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
