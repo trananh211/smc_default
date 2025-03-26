@@ -75,7 +75,13 @@ struct PoiZone {
 };
 PoiZone zHighs[], zLows[], zIntSHighs[], zIntSLows[], zArrTop[], zArrBot[];
 PoiZone zArrPbHigh[], zArrPbLow[];
+// Extreme Poi
 PoiZone zPoiExtremeLow[], zPoiExtremeHigh[], zPoiLow[], zPoiHigh[];
+// Decisional Poi
+PoiZone zPoiDecisionalLow[], zPoiDecisionalHigh[];
+double arrDecisionalHigh[], arrDecisionalLow[];
+datetime arrDecisionalHighTime[], arrDecisionalLowTime[];
+PoiZone zArrDecisionalHigh[], zArrDecisionalLow[];
 
 //---
 //--- -----------------------------------------------------------------
@@ -231,6 +237,9 @@ void definedFunction() {
    firstArray(0, arrBoHigh, firstBarTime, arrBoHighTime);
    firstArray(0, arrBoLow, firstBarTime, arrBoLowTime);
    
+   firstArray(firstBarHigh, arrDecisionalHigh, firstBarTime, arrDecisionalHighTime);
+   firstArray(firstBarLow, arrDecisionalLow, firstBarTime, arrDecisionalLowTime);
+   
    // first Zone
    firstZone(Bar1, zPoiLow);
    firstZone(Bar1, zPoiHigh);
@@ -244,6 +253,10 @@ void definedFunction() {
    firstZone(Bar1, zIntSLows);
    firstZone(Bar1, zArrPbHigh);
    firstZone(Bar1, zArrPbLow);
+   firstZone(Bar1, zPoiDecisionalHigh);
+   firstZone(Bar1, zPoiDecisionalLow);
+   firstZone(Bar1, zArrDecisionalHigh);
+   firstZone(Bar1, zArrDecisionalLow);
    
    high = iHigh(_Symbol, PERIOD_CURRENT, 1);
    low = iLow(_Symbol, PERIOD_CURRENT, 1);
@@ -307,12 +320,12 @@ string inInfoBar(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3) {
 void showComment() {
    //Print("Highs: "); ArrayPrint(Highs); 
    //Print("Lows: "); ArrayPrint(Lows);
-   //Print("intSHighs: "); ArrayPrint(intSHighs); 
-   //Print("intSLows: "); ArrayPrint(intSLows); 
+   Print("intSHighs: "); ArrayPrint(intSHighs); 
+   Print("intSLows: "); ArrayPrint(intSLows); 
    //Print("arrTop: "); ArrayPrint(arrTop); 
    //Print("arrBot: "); ArrayPrint(arrBot); 
-   Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
-   Print("arrPbLow: "); ArrayPrint(arrPbLow);
+   //Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
+   //Print("arrPbLow: "); ArrayPrint(arrPbLow);
 
    
    //Print("arrBoHigh: "+(string) arrBoHigh[0]);
@@ -329,8 +342,11 @@ void showComment() {
    //Print("zArrPbHigh"); ArrayPrint(zArrPbHigh); 
    //Print("zArrPbLow"); ArrayPrint(zArrPbLow);
    
-   Print("zPoiExtremeHigh: "); ArrayPrint(zPoiExtremeHigh);
-   Print("zPoiExtremeLow: "); ArrayPrint(zPoiExtremeLow);
+   //Print("zPoiExtremeHigh: "); ArrayPrint(zPoiExtremeHigh);
+   //Print("zPoiExtremeLow: "); ArrayPrint(zPoiExtremeLow);
+   
+   //Print("zPoiDecisionalHigh: "); ArrayPrint(zPoiDecisionalHigh);
+   //Print("zPoiDecisionalLow: "); ArrayPrint(zPoiDecisionalLow);
    
 }
 
@@ -371,8 +387,14 @@ void gannWave(){
 
 void getZoneValid() {
    showComment();
+   // Pre arr Decisional
+   getDecisionalValue();
+   // Extreme Poi
    setValueToZone(1, zArrPbHigh, zPoiExtremeHigh);
    setValueToZone(-1, zArrPbLow, zPoiExtremeLow);
+   // Decisional Poi
+   setValueToZone(1, zArrDecisionalHigh, zPoiDecisionalHigh);
+   setValueToZone(-1, zArrDecisionalLow, zPoiDecisionalLow);
 }
 
 void setValueToZone(int _type,PoiZone& zoneDefault[], PoiZone& zoneTarget[]){
@@ -460,7 +482,7 @@ int isFVG(int index, int type){ // type = 1 is High (Bearish) or type = -1 is Lo
          index--;
       }
    }
-   Print(text);
+   //Print(text);
    return result;
 }
 
@@ -483,13 +505,13 @@ void drawZone(MqlRates& bar1) {
       drawLine(IDM_TEXT_LIVE, idmLowTime, idmLow, bar1.time, idmLow, -1, IDM_TEXT_LIVE, clrRed, STYLE_DOT);
    }
    
-   // Zone.
+   // Extreme Zone.
    if (
       //sTrend == 1 && 
       ArraySize(zPoiExtremeHigh) > 0) { // care PB Low
       for(int i=0;i<ArraySize(zPoiExtremeHigh) - 1;i++) {
          //Print("zone "+ i);
-         drawBox("POI", zPoiExtremeHigh[i].time, zPoiExtremeHigh[i].low, bar1.time, zPoiExtremeHigh[i].high,1, clrMaroon, 1);
+         drawBox("ePOI", zPoiExtremeHigh[i].time, zPoiExtremeHigh[i].low, bar1.time, zPoiExtremeHigh[i].high,1, clrMaroon, 1);
       }
    }
    
@@ -498,9 +520,75 @@ void drawZone(MqlRates& bar1) {
       ArraySize(zPoiExtremeLow) > 0) { // care PB High
       for(int i=0;i<ArraySize(zPoiExtremeLow) - 1;i++) {
          //Print("zone "+ i);
-         drawBox("POI", zPoiExtremeLow[i].time, zPoiExtremeLow[i].high, bar1.time, zPoiExtremeLow[i].low,1, clrDarkGreen, 1);
+         drawBox("ePOI", zPoiExtremeLow[i].time, zPoiExtremeLow[i].high, bar1.time, zPoiExtremeLow[i].low,1, clrDarkGreen, 1);
       }
    }  
+   
+   // Decisional Zone.
+   if (
+      //sTrend == 1 && 
+      ArraySize(zPoiDecisionalHigh) > 0) { // care PB Low
+      for(int i=0;i<ArraySize(zPoiDecisionalHigh) - 1;i++) {
+         //Print("zone "+ i);
+         drawBox("dPOI", zPoiDecisionalHigh[i].time, zPoiDecisionalHigh[i].low, bar1.time, zPoiDecisionalHigh[i].high,1, clrSaddleBrown, 1);
+      }
+   }
+   
+   if (
+      //sTrend == -1 && 
+      ArraySize(zPoiDecisionalLow) > 0) { // care PB High
+      for(int i=0;i<ArraySize(zPoiDecisionalLow) - 1;i++) {
+         //Print("zone "+ i);
+         drawBox("dPOI", zPoiDecisionalLow[i].time, zPoiDecisionalLow[i].high, bar1.time, zPoiDecisionalLow[i].low,1, clrDarkBlue, 1);
+      }
+   }  
+   
+}
+
+// Todo: dang setup chua xong, can verify Decisinal POI moi khi chay. Luu gia tri High, Low vao 1 gia tri cố định để so sánh
+// 
+void getDecisionalValue() {
+   // High
+   if (ArraySize(intSHighs) > 1 && arrDecisionalHigh[0] != intSHighs[1]) {
+      // intSHigh[1] not include Extrempoi
+      int isExist = 0;
+      if (ArraySize(arrPbHigh) > 0) {
+         int isCheck = ArrayBsearch(arrPbHigh, intSHighs[1]);
+         isExist = (intSHighs[1] == arrPbHigh[isCheck]) ? isCheck : 0;
+      }
+      // update if isExist != 0
+      if (isExist != 0) {
+         updatePointStructure(intSHighs[1], intSHighTime[1], arrDecisionalHigh, arrDecisionalHighTime, false, poi_limit);
+         // Get Bar Index
+         MqlRates iBar;
+         int indexH = iBarShift(_Symbol, Timeframe, arrPbHTime[isExist], true);
+         if (indexH != -1) {
+            getValueBar(iBar, indexH);
+            updatePointZone(iBar, zArrDecisionalHigh, false, poi_limit);
+         }
+      }
+   }
+   
+   // Low
+   if (ArraySize(intSLows) > 1 && arrDecisionalLow[0] != intSLows[1]) {
+      // intSLow[1] not include Extrempoi
+      int isExist = 0;
+      if (ArraySize(arrPbLow) > 0) {
+         int isCheck = ArrayBsearch(arrPbLow, intSLows[1]);
+         isExist = (intSLows[1] == arrPbLow[isCheck]) ? isCheck : 0;
+      }
+      // update if isExist != 0
+      if (isExist != 0) {
+         updatePointStructure(intSLows[1], intSLowTime[1], arrDecisionalLow, arrDecisionalLowTime, false, poi_limit);
+         // Get Bar Index
+         MqlRates iBar;
+         int indexH = iBarShift(_Symbol, Timeframe, arrPbLTime[isExist], true);
+         if (indexH != -1) {
+            getValueBar(iBar, indexH);
+            updatePointZone(iBar, zArrDecisionalLow, false, poi_limit);
+         }
+      }
+   }
 }
 
 void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isComment = false){
