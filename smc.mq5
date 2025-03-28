@@ -324,9 +324,11 @@ void showComment() {
    Print("intSLows: "); ArrayPrint(intSLows); 
    //Print("arrTop: "); ArrayPrint(arrTop); 
    //Print("arrBot: "); ArrayPrint(arrBot); 
-   //Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
-   //Print("arrPbLow: "); ArrayPrint(arrPbLow);
-
+   Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
+   Print("arrPbLow: "); ArrayPrint(arrPbLow);
+   
+   Print("arrDecisionalHigh: "); ArrayPrint(arrDecisionalHigh);
+   Print("arrDecisionalLow: "); ArrayPrint(arrDecisionalLow);
    
    //Print("arrBoHigh: "+(string) arrBoHigh[0]);
    //Print("arrBoLow: "+(string) arrBoLow[0]);
@@ -548,16 +550,18 @@ void drawZone(MqlRates& bar1) {
 // Todo: dang setup chua xong, can verify Decisinal POI moi khi chay. Luu gia tri High, Low vao 1 gia tri cố định để so sánh
 // 
 void getDecisionalValue() {
+   string text = "Function getDecisionalValue - ";
    // High
    if (ArraySize(intSHighs) > 1 && arrDecisionalHigh[0] != intSHighs[1]) {
+      text += "\n Checking intSHighs[1]: "+ intSHighs[1];
       // intSHigh[1] not include Extrempoi
-      int isExist = 0;
+      int isExist = -1;
       if (ArraySize(arrPbHigh) > 0) {
-         int isCheck = ArrayBsearch(arrPbHigh, intSHighs[1]);
-         isExist = (intSHighs[1] == arrPbHigh[isCheck]) ? isCheck : 0;
+         isExist = checkExist(intSHighs[1], arrPbHigh);
+         text += ": Tim thay vi tri "+isExist+" trong arrPbHigh.";
       }
       // update if isExist != 0
-      if (isExist != 0) {
+      if (isExist >= 0) {
          updatePointStructure(intSHighs[1], intSHighTime[1], arrDecisionalHigh, arrDecisionalHighTime, false, poi_limit);
          // Get Bar Index
          MqlRates iBar;
@@ -566,19 +570,22 @@ void getDecisionalValue() {
             getValueBar(iBar, indexH);
             updatePointZone(iBar, zArrDecisionalHigh, false, poi_limit);
          }
+      } else {
+         text += "\n Da ton tai o vi tri : "+isExist+" trong arrPbHigh. Bo qua.";
       }
    }
    
    // Low
    if (ArraySize(intSLows) > 1 && arrDecisionalLow[0] != intSLows[1]) {
+      text += "\n Checking intSLows[1]: "+ intSLows[1];
       // intSLow[1] not include Extrempoi
-      int isExist = 0;
+      int isExist = -1;
       if (ArraySize(arrPbLow) > 0) {
-         int isCheck = ArrayBsearch(arrPbLow, intSLows[1]);
-         isExist = (intSLows[1] == arrPbLow[isCheck]) ? isCheck : 0;
+         isExist = checkExist(intSLows[1], arrPbLow);
+         text += ": Tim thay vi tri "+isExist+" trong arrPbLow.";
       }
       // update if isExist != 0
-      if (isExist != 0) {
+      if (isExist >= 0) {
          updatePointStructure(intSLows[1], intSLowTime[1], arrDecisionalLow, arrDecisionalLowTime, false, poi_limit);
          // Get Bar Index
          MqlRates iBar;
@@ -587,8 +594,24 @@ void getDecisionalValue() {
             getValueBar(iBar, indexH);
             updatePointZone(iBar, zArrDecisionalLow, false, poi_limit);
          }
+      } else {
+         text += "\n Da ton tai o vi tri : "+isExist+" trong arrPbLow. Bo qua.";
       }
    }
+   Print(text);
+}
+
+int checkExist(double value, double& array[]){
+   int checkExist = -1;
+   if (ArraySize(array) > 0) {
+      for(int i=0;i<ArraySize(array);i++) {
+         if (array[i] == value) {
+            checkExist = i;
+            break;
+         }
+      }
+   }
+   return checkExist;
 }
 
 void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isComment = false){
