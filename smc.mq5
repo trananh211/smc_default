@@ -400,12 +400,13 @@ void getZoneValid() {
 }
 
 void setValueToZone(int _type,PoiZone& zoneDefault[], PoiZone& zoneTarget[]){
+   string text = "Extreme Zone";
    // type = 1 is High, -1 is Low
    double priceKey = (_type == 1) ? zoneDefault[0].high : zoneDefault[0].low;
    datetime timeKey = zoneDefault[0].time;
    // check default has new value?? 
    if (ArraySize(zoneDefault) > 1 && priceKey != zoneTarget[0].priceKey && timeKey != zoneTarget[0].timeKey && priceKey != 0) {
-      Print( "-- " + (( _type == 1)? "Extreme High" : "Extreme Low") +"Xuat hien value: "+priceKey+" co time: "+timeKey+" moi. them vao Extreme Zone");
+      text += ( "\n" + (( _type == 1)? "Extreme High" : "Extreme Low") +". Xuat hien value: "+priceKey+" co time: "+timeKey+" moi. them vao Extreme Zone");
       int indexH; 
       MqlRates barH;
       
@@ -420,9 +421,9 @@ void setValueToZone(int _type,PoiZone& zoneDefault[], PoiZone& zoneTarget[]){
             updatePointZone(barH, zoneTarget, false, poi_limit, priceKey, timeKey);
          }
       } else {
-         Print("Khong lam gi");
+         text += ("Khong lam gi");
       }
-      
+      Print(text);
    }
 }
 
@@ -558,14 +559,14 @@ void getDecisionalValue() {
       int isExist = -1;
       if (ArraySize(arrPbHigh) > 0) {
          isExist = checkExist(intSHighs[1], arrPbHigh);
-         text += ": Tim thay vi tri "+isExist+" trong arrPbHigh.";
+         text += ": Tim thay vi tri "+isExist+" trong arrPbHigh. (Extreme)";
       }
-      // update if isExist != 0
-      if (isExist >= 0) {
+      // Neu khong phai la extreme POI. update if isExist == -1
+      if (isExist == -1) {
          updatePointStructure(intSHighs[1], intSHighTime[1], arrDecisionalHigh, arrDecisionalHighTime, false, poi_limit);
          // Get Bar Index
          MqlRates iBar;
-         int indexH = iBarShift(_Symbol, Timeframe, arrPbHTime[isExist], true);
+         int indexH = iBarShift(_Symbol, Timeframe, intSHighTime[1], true);
          if (indexH != -1) {
             getValueBar(iBar, indexH);
             updatePointZone(iBar, zArrDecisionalHigh, false, poi_limit);
@@ -582,14 +583,14 @@ void getDecisionalValue() {
       int isExist = -1;
       if (ArraySize(arrPbLow) > 0) {
          isExist = checkExist(intSLows[1], arrPbLow);
-         text += ": Tim thay vi tri "+isExist+" trong arrPbLow.";
+         text += ": Tim thay vi tri "+isExist+" trong arrPbLow. (Extreme)";
       }
-      // update if isExist != 0
-      if (isExist >= 0) {
+      // Neu khong phai la extreme POI. update if isExist == -1
+      if (isExist == -1) {
          updatePointStructure(intSLows[1], intSLowTime[1], arrDecisionalLow, arrDecisionalLowTime, false, poi_limit);
          // Get Bar Index
          MqlRates iBar;
-         int indexH = iBarShift(_Symbol, Timeframe, arrPbLTime[isExist], true);
+         int indexH = iBarShift(_Symbol, Timeframe, intSLowTime[1], true);
          if (indexH != -1) {
             getValueBar(iBar, indexH);
             updatePointZone(iBar, zArrDecisionalLow, false, poi_limit);
