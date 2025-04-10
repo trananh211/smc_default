@@ -318,17 +318,17 @@ string inInfoBar(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3) {
 }
 
 void showComment() {
-   //Print("Highs: "); ArrayPrint(Highs); 
-   //Print("Lows: "); ArrayPrint(Lows);
+   Print("Highs: "); ArrayPrint(Highs); 
+   Print("Lows: "); ArrayPrint(Lows);
    Print("intSHighs: "); ArrayPrint(intSHighs); 
    Print("intSLows: "); ArrayPrint(intSLows); 
-   //Print("arrTop: "); ArrayPrint(arrTop); 
-   //Print("arrBot: "); ArrayPrint(arrBot); 
+   Print("arrTop: "); ArrayPrint(arrTop); 
+   Print("arrBot: "); ArrayPrint(arrBot); 
    Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
    Print("arrPbLow: "); ArrayPrint(arrPbLow);
    
-   Print("arrDecisionalHigh: "); ArrayPrint(arrDecisionalHigh);
-   Print("arrDecisionalLow: "); ArrayPrint(arrDecisionalLow);
+   //Print("arrDecisionalHigh: "); ArrayPrint(arrDecisionalHigh);
+   //Print("arrDecisionalLow: "); ArrayPrint(arrDecisionalLow);
    
    //Print("arrBoHigh: "+(string) arrBoHigh[0]);
    //Print("arrBoLow: "+(string) arrBoLow[0]);
@@ -353,16 +353,21 @@ void showComment() {
 }
 
 void realGannWave() {
+   string text = "";
    MqlRates bar1, bar2, bar3;
    bar1 = rates[1];
    bar2 = rates[2];
    bar3 = rates[3];
-   Print("------------------------------");
+   text += "--------------Real Gann Wave----------------";
+   text += "\n "+inInfoBar(bar1, bar2, bar3);
    int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
    updatePointTopBot(bar1, bar2, bar3, disableComment);
    
    getZoneValid();
    drawZone(bar1);
+   
+   text += "\n ------------------------------------------------------ End ---------------------------------------------------------";
+   Print(text);
 }
 
 void gannWave(){
@@ -388,25 +393,25 @@ void gannWave(){
 }
 
 void getZoneValid() {
-   showComment();
+   //showComment();
    // Pre arr Decisional
-   getDecisionalValue();
+   getDecisionalValue(disableComment);
    // Extreme Poi
-   setValueToZone(1, zArrPbHigh, zPoiExtremeHigh);
-   setValueToZone(-1, zArrPbLow, zPoiExtremeLow);
+   setValueToZone(1, zArrPbHigh, zPoiExtremeHigh, enabledComment, "Extreme");
+   setValueToZone(-1, zArrPbLow, zPoiExtremeLow, enabledComment, "Extreme");
    // Decisional Poi
-   setValueToZone(1, zArrDecisionalHigh, zPoiDecisionalHigh);
-   setValueToZone(-1, zArrDecisionalLow, zPoiDecisionalLow);
+   setValueToZone(1, zArrDecisionalHigh, zPoiDecisionalHigh, enabledComment, "Decisional");
+   setValueToZone(-1, zArrDecisionalLow, zPoiDecisionalLow, enabledComment, "Decisional");
 }
 
-void setValueToZone(int _type,PoiZone& zoneDefault[], PoiZone& zoneTarget[]){
-   string text = "Extreme Zone";
+void setValueToZone(int _type,PoiZone& zoneDefault[], PoiZone& zoneTarget[], bool isComment = false, string str_poi = ""){
+   string text = "";
    // type = 1 is High, -1 is Low
    double priceKey = (_type == 1) ? zoneDefault[0].high : zoneDefault[0].low;
    datetime timeKey = zoneDefault[0].time;
    // check default has new value?? 
    if (ArraySize(zoneDefault) > 1 && priceKey != zoneTarget[0].priceKey && timeKey != zoneTarget[0].timeKey && priceKey != 0) {
-      text += ( "\n" + (( _type == 1)? "Extreme High" : "Extreme Low") +". Xuat hien value: "+priceKey+" co time: "+timeKey+" moi. them vao Extreme Zone");
+      text += ( "--> "+ str_poi +" "+ (( _type == 1)? "High" : "Low") +". Xuat hien value: "+priceKey+" co time: "+timeKey+" moi. them vao Extreme Zone");
       int indexH; 
       MqlRates barH;
       
@@ -423,7 +428,9 @@ void setValueToZone(int _type,PoiZone& zoneDefault[], PoiZone& zoneTarget[]){
       } else {
          text += ("Khong lam gi");
       }
-      Print(text);
+      if(isComment) {
+         Print(text);
+      }
    }
 }
 
@@ -550,7 +557,7 @@ void drawZone(MqlRates& bar1) {
 
 // Todo: dang setup chua xong, can verify Decisinal POI moi khi chay. Luu gia tri High, Low vao 1 gia tri cố định để so sánh
 // 
-void getDecisionalValue() {
+void getDecisionalValue(bool isComment = false) {
    string text = "Function getDecisionalValue - ";
    // High
    if (ArraySize(intSHighs) > 1 && arrDecisionalHigh[0] != intSHighs[1]) {
@@ -599,7 +606,7 @@ void getDecisionalValue() {
          text += "\n Da ton tai o vi tri : "+isExist+" trong arrPbLow. Bo qua.";
       }
    }
-   Print(text);
+   if (isComment) Print(text);
 }
 
 int checkExist(double value, double& array[]){
@@ -617,9 +624,9 @@ int checkExist(double value, double& array[]){
 
 void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isComment = false){
    
-   if(isComment) {
-      showComment();
-   }
+   //if(isComment) {
+   //   showComment();
+   //}
    string text;
    text += "First: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
    text += "\n"+inInfoBar(bar1, bar2, bar3);
