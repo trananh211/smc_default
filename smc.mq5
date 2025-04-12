@@ -52,8 +52,8 @@ datetime arrBoHighTime[], arrBoLowTime[];
 int LastSwingMajor = 0; // finding high or low 1 is high; -1 is low
 //high low
 //double puHigh, puLow, L, H, idmLow, idmHigh, lastH, lastL, H_lastH, L_lastHH, H_lastLL, L_lastL, motherHigh, motherLow;
-int lastTimeH = 0;
-int lastTimeL = 0;
+datetime lastTimeH = 0;
+datetime lastTimeL = 0;
 double L, H, idmLow, idmHigh, L_idmLow, L_idmHigh , lastH, lastL, H_lastH, L_lastHH, H_lastLL, L_lastL, motherHigh, motherLow;
 double findHigh, findLow;
 MqlRates L_bar, H_bar;
@@ -102,6 +102,7 @@ string PDH_TEXT = "PDH";
 string PDL_TEXT = "PDL";
 string MID_TEXT = "0.5";
 string ULTRAVOLUME = " has UltraVolume";
+string SWEEPT = "";
 
 int iWingding_gann_high = 159;
 int iWingding_gann_low = 159;
@@ -318,14 +319,16 @@ string inInfoBar(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3) {
 }
 
 void showComment() {
-   Print("Highs: "); ArrayPrint(Highs); 
-   Print("Lows: "); ArrayPrint(Lows);
-   Print("intSHighs: "); ArrayPrint(intSHighs); 
-   Print("intSLows: "); ArrayPrint(intSLows); 
-   Print("arrTop: "); ArrayPrint(arrTop); 
-   Print("arrBot: "); ArrayPrint(arrBot); 
-   Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
-   Print("arrPbLow: "); ArrayPrint(arrPbLow);
+   //Print("Highs: "); ArrayPrint(Highs);
+   //Print("Lows: "); ArrayPrint(Lows);
+   //Print("intSHighs: "); ArrayPrint(intSHighs); 
+   //Print("intSLows: "); ArrayPrint(intSLows); 
+   //Print("arrTop: "); ArrayPrint(arrTop); 
+   //Print("arrBot: "); ArrayPrint(arrBot); 
+   //Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
+   //Print("arrPbLow: "); ArrayPrint(arrPbLow); 
+   
+   Print("Final: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L);
    
    //Print("arrDecisionalHigh: "); ArrayPrint(arrDecisionalHigh);
    //Print("arrDecisionalLow: "); ArrayPrint(arrDecisionalLow);
@@ -393,9 +396,9 @@ void gannWave(){
 }
 
 void getZoneValid() {
-   //showComment();
+   showComment();
    // Pre arr Decisional
-   getDecisionalValue(enabledComment);
+   getDecisionalValue(disableComment);
    // Extreme Poi
    setValueToZone(1, zArrPbHigh, zPoiExtremeHigh, enabledComment, "Extreme");
    setValueToZone(-1, zArrPbLow, zPoiExtremeLow, enabledComment, "Extreme");
@@ -813,8 +816,6 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
             updatePointStructure(L, LTime, arrPbLow, arrPbLTime, false);
             // update Zone
             updatePointZone(L_bar, zArrPbLow, false, poi_limit);
-            // update POI Extreme Bullish
-            //updateZoneToZone(zArrPbLow[0], zPoiExtremeLow, false, poi_limit);
          }
          drawPointStructure(-1, arrPbLow[0], arrPbLTime[0], MAJOR_STRUCTURE, false, enabledDraw);
          drawLine(CHOCH_TEXT, arrPbHTime[0], arrPbHigh[0], bar1.time, arrPbHigh[0], -1, CHOCH_TEXT, clrAliceBlue, STYLE_SOLID);
@@ -1063,7 +1064,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
       
       // DONE 1
       // HH
-      if ( (iTrend == 0 || iTrend == 1 && LastSwingInternal == 1) && bar2.high > intSHighs[0]){ // BOS
+      if ( (iTrend == 0 || (iTrend == 1 && LastSwingInternal == 1)) && bar2.high > intSHighs[0]){ // BOS
          // Update new intSHigh
          updatePointStructure(bar2.high, bar2.time, intSHighs, intSHighTime, false);
          drawPointStructure(1, bar2.high, bar2.time, INTERNAL_STRUCTURE, false, enabledDraw);
@@ -1262,7 +1263,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
    return resultStructure;
 }
 
-void drawPointStructure(int itype, double priceNew, double timeNew, int typeStructure, bool del, bool isDraw) { // type: 1 High, -1 Low
+void drawPointStructure(int itype, double priceNew, datetime timeNew, int typeStructure, bool del, bool isDraw) { // type: 1 High, -1 Low
    int iWingding;
    color iColor;
    // Color and wingdings
