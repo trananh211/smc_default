@@ -26,6 +26,7 @@ double Highs[], Lows[];
 datetime hightime, lowtime;
 datetime HighsTime[], LowsTime[];
 int LastSwingMeter = 0; // finding high or low 1 is high; -1 is low
+int gTrend = 0; // trend is Up wave or Down wave, 1 is Up; -1 is Down
 
 // Internal Structure
 double intSHighs[], intSLows[];
@@ -313,8 +314,13 @@ int textCenter(int left, int right) {
   return (left + right) / 2;
 }
 
+string getValueTrend() {
+   string text = "STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+ " - iTrend: "+(string) iTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
+   return text;
+}
+
 string inInfoBar(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3) {
-   string text = " Bar1 high: "+ (string) bar1.high +" - low: "+ (string) bar1.low + " --- "+" Bar2 high: "+ (string) bar2.high +" - low: "+ (string) bar2.low+ " --- "+" Bar3 high: "+ (string) bar3.high +" - low: "+ (string) bar3.low; 
+   string text = " Bar1 high: "+ (string) bar1.high +" - low: "+ (string) bar1.low + " --- "+" Bar2 high: "+ (string) bar2.high +" - low: "+ (string) bar2.low+ " --- "+" Bar3 high: "+ (string) bar3.high +" - low: "+ (string) bar3.low;
    return text;
 }
 
@@ -327,8 +333,6 @@ void showComment() {
    //Print("arrBot: "); ArrayPrint(arrBot); 
    //Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
    //Print("arrPbLow: "); ArrayPrint(arrPbLow); 
-   
-   Print("Final: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L);
    
    Print("arrDecisionalHigh: "); ArrayPrint(arrDecisionalHigh);
    Print("arrDecisionalLow: "); ArrayPrint(arrDecisionalLow);
@@ -363,12 +367,15 @@ void realGannWave() {
    bar3 = rates[3];
    text += "--------------Real Gann Wave----------------";
    text += "\n "+inInfoBar(bar1, bar2, bar3);
+   text += "\n First: "+getValueTrend();
+   Print(text);
    int resultStructure = drawStructureInternal(bar1, bar2, bar3, enabledComment);
    updatePointTopBot(bar1, bar2, bar3, enabledComment);
    
    getZoneValid();
    drawZone(bar1);
    
+   text = "\n Final: "+getValueTrend();
    text += "\n ------------------------------------------------------ End ---------------------------------------------------------\n";
    Print(text);
 }
@@ -381,6 +388,7 @@ void gannWave(){
       
       Print("No:" + (string) j);
       Print(inInfoBar(bar1, bar2, bar3));
+      Print("First: "+getValueTrend());
       bar1 = waveRates[j];
       bar2 = waveRates[j+1];
       bar3 = waveRates[j+2];
@@ -389,6 +397,8 @@ void gannWave(){
       updatePointTopBot(bar1, bar2, bar3, enabledComment);
       getZoneValid();
       drawZone(bar1);
+      
+      Print("\n Final: "+getValueTrend());
       Print(" ------------------------------------------------------ End ---------------------------------------------------------\n");
    }
    // danh dau vi tri ket thuc
@@ -627,7 +637,7 @@ int checkExist(double value, double& array[]){
 
 void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isComment = false){
    string text;
-   text += "First: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
+   //text += "First: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
    text += "\n"+inInfoBar(bar1, bar2, bar3);
    
    double barHigh = bar1.high;
@@ -932,7 +942,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          findHigh = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
       }
       
-      // continue Down, COntinue BOS down
+      // continue Down, Continue BOS down
       if (
          //LastSwingMajor == 1 && 
          bar1.low < arrPbLow[0] && arrPbLow[0] != arrChoLow[0]) {
@@ -998,7 +1008,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
    }
    
    if(isComment) {
-      text += "\n Last: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
+      //text += "\n Last: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
       Print(text);
       //showComment();
    }
