@@ -52,8 +52,8 @@ datetime arrBoHighTime[], arrBoLowTime[];
 int LastSwingMajor = 0; // finding high or low 1 is high; -1 is low
 //high low
 //double puHigh, puLow, L, H, idmLow, idmHigh, lastH, lastL, H_lastH, L_lastHH, H_lastLL, L_lastL, motherHigh, motherLow;
-int lastTimeH = 0;
-int lastTimeL = 0;
+datetime lastTimeH = 0;
+datetime lastTimeL = 0;
 double L, H, idmLow, idmHigh, L_idmLow, L_idmHigh , lastH, lastL, H_lastH, L_lastHH, H_lastLL, L_lastL, motherHigh, motherLow;
 double findHigh, findLow;
 MqlRates L_bar, H_bar;
@@ -327,8 +327,8 @@ void showComment() {
    Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
    Print("arrPbLow: "); ArrayPrint(arrPbLow);
    
-   //Print("arrDecisionalHigh: "); ArrayPrint(arrDecisionalHigh);
-   //Print("arrDecisionalLow: "); ArrayPrint(arrDecisionalLow);
+   Print("arrDecisionalHigh: "); ArrayPrint(arrDecisionalHigh);
+   Print("arrDecisionalLow: "); ArrayPrint(arrDecisionalLow);
    
    //Print("arrBoHigh: "+(string) arrBoHigh[0]);
    //Print("arrBoLow: "+(string) arrBoLow[0]);
@@ -344,11 +344,11 @@ void showComment() {
    //Print("zArrPbHigh"); ArrayPrint(zArrPbHigh); 
    //Print("zArrPbLow"); ArrayPrint(zArrPbLow);
    
-   Print("zPoiExtremeHigh: "); ArrayPrint(zPoiExtremeHigh);
-   Print("zPoiExtremeLow: "); ArrayPrint(zPoiExtremeLow);
-   
-   Print("zPoiDecisionalHigh: "); ArrayPrint(zPoiDecisionalHigh);
-   Print("zPoiDecisionalLow: "); ArrayPrint(zPoiDecisionalLow);
+//   Print("zPoiExtremeHigh: "); ArrayPrint(zPoiExtremeHigh);
+//   Print("zPoiExtremeLow: "); ArrayPrint(zPoiExtremeLow);
+//   
+//   Print("zPoiDecisionalHigh: "); ArrayPrint(zPoiDecisionalHigh);
+//   Print("zPoiDecisionalLow: "); ArrayPrint(zPoiDecisionalLow);
    
 }
 
@@ -360,13 +360,13 @@ void realGannWave() {
    bar3 = rates[3];
    text += "--------------Real Gann Wave----------------";
    text += "\n "+inInfoBar(bar1, bar2, bar3);
-   int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
-   updatePointTopBot(bar1, bar2, bar3, disableComment);
+   int resultStructure = drawStructureInternal(bar1, bar2, bar3, enabledComment);
+   updatePointTopBot(bar1, bar2, bar3, enabledComment);
    
    getZoneValid();
    drawZone(bar1);
    
-   text += "\n ------------------------------------------------------ End ---------------------------------------------------------";
+   text += "\n ------------------------------------------------------ End ---------------------------------------------------------\n";
    Print(text);
 }
 
@@ -382,18 +382,18 @@ void gannWave(){
       bar2 = waveRates[j+1];
       bar3 = waveRates[j+2];
       
-      int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
-      updatePointTopBot(bar1, bar2, bar3, disableComment);
+      int resultStructure = drawStructureInternal(bar1, bar2, bar3, enabledComment);
+      updatePointTopBot(bar1, bar2, bar3, enabledComment);
       getZoneValid();
       drawZone(bar1);
-      Print(" ------------------------------------------------------ End ---------------------------------------------------------");
+      Print(" ------------------------------------------------------ End ---------------------------------------------------------\n");
    }
    // danh dau vi tri ket thuc
    createObj(waveRates[0].time, waveRates[0].low, 238, -1, clrRed, "Stop");
 }
 
 void getZoneValid() {
-   //showComment();
+   showComment();
    // Pre arr Decisional
    getDecisionalValue(enabledComment);
    // Extreme Poi
@@ -558,7 +558,7 @@ void drawZone(MqlRates& bar1) {
 // Todo: dang setup chua xong, can verify Decisinal POI moi khi chay. Luu gia tri High, Low vao 1 gia tri cố định để so sánh
 // 
 void getDecisionalValue(bool isComment = false) {
-   string text = "Function getDecisionalValue - ";
+   string text = "Function getDecisionalValue:";
    // High
    if (ArraySize(intSHighs) > 1 && arrDecisionalHigh[0] != intSHighs[1]) {
       text += "\n Checking intSHighs[1]: "+ (string) intSHighs[1];
@@ -623,10 +623,6 @@ int checkExist(double value, double& array[]){
 }
 
 void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isComment = false){
-   
-   //if(isComment) {
-   //   showComment();
-   //}
    string text;
    text += "First: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
    text += "\n"+inInfoBar(bar1, bar2, bar3);
@@ -1003,7 +999,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
    if(isComment) {
       text += "\n Last: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
       Print(text);
-      showComment();
+      //showComment();
    }
 }
 
@@ -1063,7 +1059,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
       
       // DONE 1
       // HH
-      if ( (iTrend == 0 || iTrend == 1 && LastSwingInternal == 1) && bar2.high > intSHighs[0]){ // BOS
+      if ( (iTrend == 0 || (iTrend == 1 && LastSwingInternal == 1)) && bar2.high > intSHighs[0]){ // BOS
          // Update new intSHigh
          updatePointStructure(bar2.high, bar2.time, intSHighs, intSHighTime, false);
          drawPointStructure(1, bar2.high, bar2.time, INTERNAL_STRUCTURE, false, enabledDraw);
@@ -1262,7 +1258,7 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
    return resultStructure;
 }
 
-void drawPointStructure(int itype, double priceNew, double timeNew, int typeStructure, bool del, bool isDraw) { // type: 1 High, -1 Low
+void drawPointStructure(int itype, double priceNew, datetime timeNew, int typeStructure, bool del, bool isDraw) { // type: 1 High, -1 Low
    int iWingding;
    color iColor;
    // Color and wingdings
