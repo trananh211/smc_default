@@ -334,8 +334,8 @@ void showComment() {
    //Print("arrPbHigh: "); ArrayPrint(arrPbHigh); 
    //Print("arrPbLow: "); ArrayPrint(arrPbLow); 
    
-   Print("arrDecisionalHigh: "); ArrayPrint(arrDecisionalHigh);
-   Print("arrDecisionalLow: "); ArrayPrint(arrDecisionalLow);
+   //Print("arrDecisionalHigh: "); ArrayPrint(arrDecisionalHigh);
+   //Print("arrDecisionalLow: "); ArrayPrint(arrDecisionalLow);
    
    //Print("arrBoHigh: "+(string) arrBoHigh[0]);
    //Print("arrBoLow: "+(string) arrBoLow[0]);
@@ -351,11 +351,11 @@ void showComment() {
    //Print("zArrPbHigh"); ArrayPrint(zArrPbHigh); 
    //Print("zArrPbLow"); ArrayPrint(zArrPbLow);
    
-//   Print("zPoiExtremeHigh: "); ArrayPrint(zPoiExtremeHigh);
-//   Print("zPoiExtremeLow: "); ArrayPrint(zPoiExtremeLow);
-//   
-//   Print("zPoiDecisionalHigh: "); ArrayPrint(zPoiDecisionalHigh);
-//   Print("zPoiDecisionalLow: "); ArrayPrint(zPoiDecisionalLow);
+   Print("zPoiExtremeHigh: "); ArrayPrint(zPoiExtremeHigh);
+   Print("zPoiExtremeLow: "); ArrayPrint(zPoiExtremeLow);
+   
+   Print("zPoiDecisionalHigh: "); ArrayPrint(zPoiDecisionalHigh);
+   Print("zPoiDecisionalLow: "); ArrayPrint(zPoiDecisionalLow);
    
 }
 
@@ -372,6 +372,7 @@ void realGannWave() {
    int resultStructure = drawStructureInternal(bar1, bar2, bar3, enabledComment);
    updatePointTopBot(bar1, bar2, bar3, enabledComment);
    
+   // POI
    getZoneValid();
    drawZone(bar1);
    
@@ -395,6 +396,8 @@ void gannWave(){
       
       int resultStructure = drawStructureInternal(bar1, bar2, bar3, enabledComment);
       updatePointTopBot(bar1, bar2, bar3, enabledComment);
+      
+      // POI
       getZoneValid();
       drawZone(bar1);
       
@@ -403,6 +406,34 @@ void gannWave(){
    }
    // danh dau vi tri ket thuc
    createObj(waveRates[0].time, waveRates[0].low, 238, -1, clrRed, "Stop");
+}
+
+void setZone(MqlRates& bar) {
+   // kiem tra mitigation extreme zone
+   // High
+   checkMitigateZone(zPoiExtremeHigh, enabledComment);
+   //// Low
+   //checkMitigateZone(zPoiExtremeLow, enabledComment);
+   //// kiem tra mitigation desicional zone
+   //// High
+   //checkMitigateZone(zPoiDecisionalHigh, enabledComment);
+   //// Low
+   //checkMitigateZone(zPoiDecisionalLow, enabledComment);
+}
+
+void checkMitigateZone(PoiZone& zone[], bool isComment = false) {
+    string text = "";
+    if (ArraySize(zone) > 0) {
+      text += "Ton tai zone can check."
+      for(int i=0;i<ArraySize(zone) - 1;i++) {
+         
+      }
+    } else {
+      text += "Khong ton tai phan tu Zone nao can check. Bo qua";
+    }
+    if (isComment) {
+      Print(text);
+    }
 }
 
 void getZoneValid() {
