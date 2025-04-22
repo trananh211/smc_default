@@ -351,11 +351,11 @@ void showComment() {
    //Print("zArrPbHigh"); ArrayPrint(zArrPbHigh); 
    //Print("zArrPbLow"); ArrayPrint(zArrPbLow);
    
-   Print("zPoiExtremeHigh: "); ArrayPrint(zPoiExtremeHigh);
-   Print("zPoiExtremeLow: "); ArrayPrint(zPoiExtremeLow);
-   
-   Print("zPoiDecisionalHigh: "); ArrayPrint(zPoiDecisionalHigh);
-   Print("zPoiDecisionalLow: "); ArrayPrint(zPoiDecisionalLow);
+//   Print("zPoiExtremeHigh: "); ArrayPrint(zPoiExtremeHigh);
+//   Print("zPoiExtremeLow: "); ArrayPrint(zPoiExtremeLow);
+//   
+//   Print("zPoiDecisionalHigh: "); ArrayPrint(zPoiDecisionalHigh);
+//   Print("zPoiDecisionalLow: "); ArrayPrint(zPoiDecisionalLow);
    
 }
 
@@ -375,6 +375,8 @@ void realGannWave() {
    // POI
    getZoneValid();
    drawZone(bar1);
+   
+   setZone(bar1);
    
    text = "\n Final: "+getValueTrend();
    text += "\n ------------------------------------------------------ End ---------------------------------------------------------\n";
@@ -401,6 +403,8 @@ void gannWave(){
       getZoneValid();
       drawZone(bar1);
       
+      setZone(bar1);
+      
       Print("\n Final: "+getValueTrend());
       Print(" ------------------------------------------------------ End ---------------------------------------------------------\n");
    }
@@ -411,28 +415,37 @@ void gannWave(){
 void setZone(MqlRates& bar) {
    // kiem tra mitigation extreme zone
    // High
-   checkMitigateZone(zPoiExtremeHigh, enabledComment);
-   //// Low
-   //checkMitigateZone(zPoiExtremeLow, enabledComment);
+   checkMitigateZone(zPoiExtremeHigh, bar, 1,enabledComment);
+   // Low
+   checkMitigateZone(zPoiExtremeLow, bar, -1,enabledComment);
    //// kiem tra mitigation desicional zone
    //// High
-   //checkMitigateZone(zPoiDecisionalHigh, enabledComment);
+   //checkMitigateZone(zPoiDecisionalHigh, bar, 1, enabledComment);
    //// Low
-   //checkMitigateZone(zPoiDecisionalLow, enabledComment);
+   //checkMitigateZone(zPoiDecisionalLow, bar, -1, enabledComment);
 }
 
-void checkMitigateZone(PoiZone& zone[], bool isComment = false) {
+void checkMitigateZone(PoiZone& zone[], MqlRates& bar, int type, bool isComment = false) {
     string text = "";
     if (ArraySize(zone) > 0) {
-      text += "Ton tai zone can check."
-      for(int i=0;i<ArraySize(zone) - 1;i++) {
-         
+      text += "Ton tai zone can check.";
+      for(int i=ArraySize(zone) - 1;i >= 0;i--) {
+         if (zone[i].mitigated == 0) {
+            // Check High or Low
+            if ((type == 1 && bar.high >= zone[i].low ) || (type == -1 && bar.low <=  zone[i].high)) {
+               text += "\n Zone position is "+ (string) i+ " is type = "+ ((type == 1)? "High": "Low") + " mitigate with bar high:" + 
+               (string) bar.high + "; bar low: " + (string) bar.low+ "; bar time: "+ (string) bar.time;  
+               zone[i].mitigated = 1;
+            }
+         }
       }
+      
     } else {
       text += "Khong ton tai phan tu Zone nao can check. Bo qua";
     }
     if (isComment) {
       Print(text);
+      ArrayPrint(zone);
     }
 }
 
