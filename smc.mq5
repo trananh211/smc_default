@@ -1461,10 +1461,10 @@ void drawLine(string name, datetime  time_start, double price_start, datetime ti
 }
 
 //+------------------------------------------------------------------+
-void createObj(datetime time, double price, int arrowCode, int direction, color clr, string txt)
+void createObj(datetime _time, double price, int arrowCode, int direction, color clr, string txt)
   {
    string objName ="";
-   StringConcatenate(objName, "Signal@", time, "at", DoubleToString(price, _Digits), "(", arrowCode, ")");
+   StringConcatenate(objName, "Signal@", _time, "at", DoubleToString(price, _Digits), "(", arrowCode, ")");
 
    double ask=SymbolInfoDouble(Symbol(), SYMBOL_ASK);
    double bid=SymbolInfoDouble(Symbol(), SYMBOL_BID);
@@ -1486,7 +1486,7 @@ void createObj(datetime time, double price, int arrowCode, int direction, color 
          ObjectSetInteger(0, objName, OBJPROP_ANCHOR, ANCHOR_BOTTOM);
    }
    string objNameDesc = objName + txt;
-   if (ObjectCreate(0, objNameDesc, OBJ_TEXT, 0, time, price)) {
+   if (ObjectCreate(0, objNameDesc, OBJ_TEXT, 0, _time, price)) {
       ObjectSetString(0, objNameDesc, OBJPROP_TEXT, " "+txt);
       ObjectSetInteger(0, objNameDesc, OBJPROP_COLOR, clr);
       if( direction > 0)
@@ -1499,10 +1499,10 @@ void createObj(datetime time, double price, int arrowCode, int direction, color 
 //+------------------------------------------------------------------+
 //| Function to delete objects created by createObj                   |
 //+------------------------------------------------------------------+
-void deleteObj(datetime time, double price, int arrowCode, string txt) {
+void deleteObj(datetime _time, double price, int arrowCode, string txt) {
    // Create the object name using the same format as createObj
    string objName = "";
-   StringConcatenate(objName, "Signal@", time, "at", DoubleToString(price, _Digits), "(", arrowCode, ")");
+   StringConcatenate(objName, "Signal@", _time, "at", DoubleToString(price, _Digits), "(", arrowCode, ")");
    
    // Delete the arrow object
    if(ObjectFind(0, objName) != -1) // Check if the object exists
@@ -1523,9 +1523,9 @@ void deleteObj(datetime time, double price, int arrowCode, string txt) {
 //+------------------------------------------------------------------+
 //| Function to delete line created by drawline                      |
 //+------------------------------------------------------------------+
-void deleteLine(datetime time, double price, string name) {
+void deleteLine(datetime _time, double price, string name) {
    // Create the object name using the same format as drawline
-   string objName = name + TimeToString(time);
+   string objName = name + TimeToString(_time);
    //StringConcatenate(objName, "Signal@", time, "at", DoubleToString(price, _Digits), "(", arrowCode, ")");
    
    // Delete the arrow object
