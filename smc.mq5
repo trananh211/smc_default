@@ -26,20 +26,20 @@ double Highs[], Lows[];
 datetime hightime, lowtime;
 datetime HighsTime[], LowsTime[];
 int LastSwingMeter = 0; // finding high or low 1 is high; -1 is low
-int gTrend = 0; // trend is Up wave or Down wave, 1 is Up; -1 is Down
+int gTrend = 0; // Gann trend    : trend is Up wave or Down wave, 1 is Up; -1 is Down
 
 // Internal Structure
 double intSHighs[], intSLows[];
 datetime intSHighTime[], intSLowTime[];
 int LastSwingInternal = 0; // finding high or low 1 is high; -1 is low
-int iTrend = 0; // trend is Up wave or Down wave, 1 is Up; -1 is down 
+int iTrend = 0; // Minor trend   : trend is Up wave or Down wave, 1 is Up; -1 is down 
 
 
 // array pullback swing high or low
 double arrTop[], arrBot[];
 datetime arrTopTime[], arrBotTime[];
-int mTrend = 0; // trend is Up wave or Down wave, 1 is Up; -1 is down 
-int sTrend = 0; // trend is Up wave or Down wave, 1 is Up; -1 is down 
+int mTrend = 0; // Marjor trend  : trend is Up wave or Down wave, 1 is Up; -1 is down 
+int sTrend = 0; // Super trend   : trend is Up wave or Down wave, 1 is Up; -1 is down 
 datetime arrPbHTime[];
 double arrPbHigh[];
 datetime arrPbLTime[];
@@ -315,7 +315,9 @@ int textCenter(int left, int right) {
 }
 
 string getValueTrend() {
-   string text = "STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+ " - iTrend: "+(string) iTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
+   string text =  "STrend: "+ (string) sTrend + " mTrend: "+(string) mTrend+ " iTrend: "+(string) iTrend+" LastSwingMajor: "+(string) LastSwingMajor+ " gTrend: "+(string) gTrend + 
+                  " ; findHigh: "+(string) findHigh+" idmHigh: "+(string) idmHigh+" | findLow: "+(string) findLow+" idmLow: "+ (string) idmLow+
+                  " ; H: "+ (string) H +" - L: "+(string) L;
    return text;
 }
 
@@ -444,8 +446,8 @@ void checkMitigateZone(PoiZone& zone[], MqlRates& bar, int type, bool isComment 
       text += "Khong ton tai phan tu Zone nao can check. Bo qua";
     }
     if (isComment) {
-      Print(text);
-      ArrayPrint(zone);
+      //Print(text);
+      //ArrayPrint(zone);
     }
 }
 
@@ -1310,6 +1312,17 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          ArrayPrint(intSLows);
       }
    }
+   
+   // Check Break Highest or Lowest value status 
+   // Check break high
+   if (bar1.high > highEst && isBarBreak(bar1, bar2, 1)) {
+      gTrend = 1;
+   }
+   // Check break low
+   if (bar1.low < lowEst && isBarBreak(bar1, bar2, -1)) {
+      gTrend = -1;
+   }
+   
    return resultStructure;
 }
 
@@ -1557,3 +1570,11 @@ bool IsLastBar() {
 //   return (motherHigh > high && motherLow < low) ? true : false;
 //}
 
+// type = 1: check Break High , type = -1: check Break Low
+bool isBarBreak(MqlRates& bar1, MqlRates& bar2, int type) {
+   bool result = false;
+   if ((type == 1 && bar1.close > bar2.high) || (type == -1 && bar1.close < bar2.low) ) {
+      result = true;
+   }
+   return result;
+}
