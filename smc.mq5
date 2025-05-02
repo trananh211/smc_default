@@ -7,6 +7,24 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
+#include <Trade\Trade.mqh>
+      CTrade                  trade;
+      CPositionInfo           posinfo;
+      COrderInfo              ordinfo;
+      
+   input group "=== Trading Profiles ==="
+      enum SystemType {Forex=0, BitCoin=1, _Gold=2, US_Indices=3};
+      input SystemType SType = 0; // Trading system applied (Forex, Crypto, Gold, Indices)
+      int SysChoice;
+   
+   input group "=== Common Trading Inputs ==="   
+      input double                  minVolume                        = 0.01;              // Min volume to start (Fixed volume + Risk Percent = 0)
+      input double                  RiskPercent                      = 2;                 // Risk as % of Trading Capital
+      input ENUM_TIMEFRAMES         Timeframe                        = PERIOD_M5;    // Time frame to run
+      input int                     InpMagic                         = 1102;            // EA indentification no
+      input string                  TradeComment                     = "Scalping Robot";  //Trade Comment
+      input int                     LookBackBar                      = 100;
+
 bool enabledComment = true;
 bool disableComment = false;
 MqlRates waveRates[],rates[];
