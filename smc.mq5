@@ -26,20 +26,20 @@ double Highs[], Lows[];
 datetime hightime, lowtime;
 datetime HighsTime[], LowsTime[];
 int LastSwingMeter = 0; // finding high or low 1 is high; -1 is low
-int gTrend = 0; // trend is Up wave or Down wave, 1 is Up; -1 is Down
+int gTrend = 0; // Gann trend    : trend is Up wave or Down wave, 1 is Up; -1 is Down
 
 // Internal Structure
 double intSHighs[], intSLows[];
 datetime intSHighTime[], intSLowTime[];
 int LastSwingInternal = 0; // finding high or low 1 is high; -1 is low
-int iTrend = 0; // trend is Up wave or Down wave, 1 is Up; -1 is down 
+int iTrend = 0; // Minor trend   : trend is Up wave or Down wave, 1 is Up; -1 is down 
 
 
 // array pullback swing high or low
 double arrTop[], arrBot[];
 datetime arrTopTime[], arrBotTime[];
-int mTrend = 0; // trend is Up wave or Down wave, 1 is Up; -1 is down 
-int sTrend = 0; // trend is Up wave or Down wave, 1 is Up; -1 is down 
+int mTrend = 0; // Marjor trend  : trend is Up wave or Down wave, 1 is Up; -1 is down 
+int sTrend = 0; // Super trend   : trend is Up wave or Down wave, 1 is Up; -1 is down 
 datetime arrPbHTime[];
 double arrPbHigh[];
 datetime arrPbLTime[];
@@ -57,6 +57,7 @@ datetime lastTimeH = 0;
 datetime lastTimeL = 0;
 double L, H, idmLow, idmHigh, L_idmLow, L_idmHigh , lastH, lastL, H_lastH, L_lastHH, H_lastLL, L_lastL, motherHigh, motherLow;
 double findHigh, findLow;
+int touchIdmHigh, touchIdmLow;
 MqlRates L_bar, H_bar;
 
 //bar indexes
@@ -315,7 +316,10 @@ int textCenter(int left, int right) {
 }
 
 string getValueTrend() {
-   string text = "STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+ " - iTrend: "+(string) iTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
+   string text =  "STrend: "+ (string) sTrend + " ; mTrend: "+(string) mTrend+ " ; iTrend: "+(string) iTrend+ " ; gTrend: "+(string) gTrend +" ; LastSwingMajor: "+(string) LastSwingMajor+ "\n"+
+                  " | findHigh: "+(string) findHigh+" idmHigh: "+(string) idmHigh+" ; findLow: "+(string) findLow+" idmLow: "+ (string) idmLow+
+                   "; touchIdmHigh: " + (string) touchIdmHigh + "; touchIdmLow: " + (string) touchIdmLow + "\n"+
+                  " | H: "+ (string) H +" - L: "+(string) L +" - highEst: "+(string) highEst +" - lowEst: "+(string) lowEst;
    return text;
 }
 
@@ -444,8 +448,8 @@ void checkMitigateZone(PoiZone& zone[], MqlRates& bar, int type, bool isComment 
       text += "Khong ton tai phan tu Zone nao can check. Bo qua";
     }
     if (isComment) {
-      Print(text);
-      ArrayPrint(zone);
+      //Print(text);
+      //ArrayPrint(zone);
     }
 }
 
@@ -681,7 +685,6 @@ int checkExist(double value, double& array[]){
 
 void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isComment = false){
    string text;
-   //text += "First: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
    text += "\n"+inInfoBar(bar1, bar2, bar3);
    
    double barHigh = bar1.high;
@@ -714,7 +717,7 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
    }
    // End Lan dau tien
    
-   if (bar3.high < bar2.high && bar2.high > bar1.high) { // tim thay dinh high
+   if (bar3.high < bar2.high && bar2.high > bar1.high) { // tim thay swing high
       text += "\n 0.2. Find Swing High";
       if (findHigh == 1 && bar2.high > H) {
          text += " => findhigh == 1 , H new > H old "+(string) bar2.high+" > "+(string) H+". Update new High = "+(string) bar2.high;
@@ -754,6 +757,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          sTrend = 1; mTrend = 1; LastSwingMajor = 1;
          findLow = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
+         
+         // touch idm
+         touchIdmHigh = 0; touchIdmLow = 0;
       }
       
       if (bar3.high < bar2.high && bar2.high > bar1.high) { // tim thay dinh high 
@@ -805,6 +811,8 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          L = bar1.low; LTime = bar1.time;
          L_bar = bar1;
          findHigh = 0; H = 0;
+         
+         touchIdmHigh = 1;
       }
       
       // CHoCH Low
@@ -825,6 +833,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          sTrend = -1; mTrend = -1; LastSwingMajor = -1;
          findHigh = 0; idmLow = Highs[0]; idmLowTime = HighsTime[0];
+         
+         // touch idm
+         touchIdmHigh = 0; touchIdmLow = 0;
       }
       
       // continue Up, Continue BOS up
@@ -852,6 +863,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          findLow = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
          L = 0; 
+         
+         // touch idm
+         touchIdmHigh = 0; touchIdmLow = 0;
       }
    }
 
@@ -876,6 +890,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          findLow = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
          L = 0; 
+         
+         // touch idm
+         touchIdmHigh = 0; touchIdmLow = 0;
       }
       // CHoCH DOwn. 
       if (LastSwingMajor == -1 && bar1.low < arrPbLow[0] && arrPbLow[0] != arrChoLow[0]) {
@@ -890,6 +907,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          sTrend = -1; mTrend = -1; LastSwingMajor = -1;
          findHigh = 0; idmLow = Highs[0]; idmLowTime = HighsTime[0];
+         
+         // touch idm
+         touchIdmHigh = 0; touchIdmLow = 0;
       }
    }
    
@@ -912,6 +932,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          sTrend = -1; mTrend = -1; LastSwingMajor = -1;
          findHigh = 0; idmLow = Highs[0]; idmLowTime = HighsTime[0];
+         
+         // touch idm
+         touchIdmHigh = 0; touchIdmLow = 0;
       }
       
       if (bar3.low > bar2.low && bar2.low < bar1.low) { // tim thay swing low 
@@ -964,6 +987,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          H = bar1.high; HTime = bar1.time;
          H_bar = bar1;
          findLow = 0; L = 0;
+         
+         // touch idm
+         touchIdmLow = 1;
       }
       
       // CHoCH High
@@ -984,6 +1010,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          sTrend = 1; mTrend = 1; LastSwingMajor = 1;
          findHigh = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
+         
+         // touch idm
+         touchIdmHigh = 0; touchIdmLow = 0;
       }
       
       // continue Down, Continue BOS down
@@ -1008,6 +1037,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          L_idmLowTime = idmLowTime;
          
          findHigh = 0; idmLow = Highs[0]; idmHighTime = LowsTime[0]; H = 0;
+         
+         // touch idm
+         touchIdmHigh = 0; touchIdmLow = 0;
       }
       
    }
@@ -1031,6 +1063,8 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          L_idmLowTime = idmLowTime;
          
          findHigh = 0; idmLow = Highs[0]; idmHighTime = LowsTime[0]; H = 0;
+         // touch idm
+         touchIdmHigh = 0; touchIdmLow = 0;
       }
       // CHoCH Up. 
       if (LastSwingMajor == 1 && bar1.high > arrPbHigh[0] && arrPbHigh[0] != arrChoHigh[0]) {
@@ -1048,6 +1082,8 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
          
          sTrend = 1; mTrend = 1; LastSwingMajor = 1;
          findLow = 0; idmHigh = Lows[0]; idmHighTime = LowsTime[0];
+         // touch idm
+         touchIdmHigh = 0; touchIdmLow = 0;
       }
    }
    
@@ -1310,6 +1346,17 @@ int drawStructureInternal(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool i
          ArrayPrint(intSLows);
       }
    }
+   
+   // Check Break Highest or Lowest value status 
+   // Check break high
+   if (bar1.high > highEst && isBarBreak(bar1, bar2, 1)) {
+      gTrend = (gTrend > 0) ? 2: 1;
+   }
+   // Check break low
+   if (bar1.low < lowEst && isBarBreak(bar1, bar2, -1)) {
+      gTrend = (gTrend < 0) ? -2: -1;
+   }
+   
    return resultStructure;
 }
 
@@ -1557,3 +1604,11 @@ bool IsLastBar() {
 //   return (motherHigh > high && motherLow < low) ? true : false;
 //}
 
+// type = 1: check Break High , type = -1: check Break Low
+bool isBarBreak(MqlRates& bar1, MqlRates& bar2, int type) {
+   bool result = false;
+   if ((type == 1 && bar1.close > bar2.high) || (type == -1 && bar1.close < bar2.low) ) {
+      result = true;
+   }
+   return result;
+}
