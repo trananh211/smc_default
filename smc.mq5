@@ -1655,7 +1655,8 @@ bool IsLastBar() {
 // type = 1: check Break High , type = -1: check Break Low
 bool isBarBreak(MqlRates& bar1, MqlRates& bar2, int type) {
    bool result = false;
-   if ((type == 1 && bar1.close > bar2.high) || (type == -1 && bar1.close < bar2.low) ) {
+   //if ((type == 1 && bar1.close > bar2.high) || (type == -1 && bar1.close < bar2.low) ) { // Body break
+   if ((type == 1 && bar1.high > bar2.high) || (type == -1 && bar1.low < bar2.low) ) { // wick break
       result = true;
    }
    return result;
@@ -1702,7 +1703,7 @@ double showTotal() {
    //get the time server
    datetime    time_server =TimeTradeServer(tm);
    // get the local time
-   datetime time = TimeLocal();
+   datetime ttime = TimeLocal();
    
    //formart the time and create a string
    double CurrentTime = TimeToString(time_server, TIME_MINUTES);
@@ -1716,7 +1717,7 @@ double showTotal() {
    
    string text = 
          "Today is "+ EnumToString((ENUM_DAY_OF_WEEK)tm.day_of_week)+"\n"
-         "Local Time = "+ (string) TimeToString(time, TIME_DATE) + " " +(string) TimeToString(time, TIME_SECONDS)+ "\n" 
+         "Local Time = "+ (string) TimeToString(ttime, TIME_DATE) + " " +(string) TimeToString(ttime, TIME_SECONDS)+ "\n" 
          "Server Time  = " +  (string) time_server+"\n"+
          "Pair: "+_Symbol+" - "+ "Spread = "+ DoubleToString(SymbolInfoDouble(_Symbol, SYMBOL_ASK) - SymbolInfoDouble(_Symbol, SYMBOL_BID) , Digits()) +"\n"+
          "Trading Time = "+ (string) SHInput+ " -> "+ (string) EHInput+ " (Server Time)\n"+
@@ -1775,10 +1776,10 @@ double showTotal() {
 // start Trade 
 void beginTrade() {
    string text = "";
-   MqlDateTime time;
-   TimeToStruct(TimeCurrent(), time);
+   MqlDateTime ttime;
+   TimeToStruct(TimeCurrent(), ttime);
    
-   int Hournow = time.hour;
+   int Hournow = ttime.hour;
    SHChoice = SHInput;
    EHChoice = EHInput;
    
@@ -1797,19 +1798,48 @@ void beginTrade() {
    
    int BuyTotal = 0;
    int SellTotal = 0;
+   int pendingBuy = 0;
+   int pendingSell = 0;
   
    for (int i=OrdersTotal()-1; i>=0; i--){ 
       ordinfo.SelectByIndex(i);
-      if (ordinfo.OrderType() == ORDER_TYPE_BUY_STOP && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) BuyTotal++; 
-      if (ordinfo.OrderType() == ORDER_TYPE_SELL_STOP && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) SellTotal++; 
-      if (ordinfo.OrderType() == ORDER_TYPE_BUY_LIMIT && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) BuyTotal++; 
-      if (ordinfo.OrderType() == ORDER_TYPE_SELL_LIMIT && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) SellTotal++;
+      if (ordinfo.OrderType() == ORDER_TYPE_BUY_STOP && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) {
+         BuyTotal++;
+         pendingBuy++;  
+      }
+      if (ordinfo.OrderType() == ORDER_TYPE_SELL_STOP && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) {
+         SellTotal++;
+         pendingSell++;
+      } 
+      if (ordinfo.OrderType() == ORDER_TYPE_BUY_LIMIT && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) {
+         BuyTotal++;
+         pendingBuy++;
+      }
+      if (ordinfo.OrderType() == ORDER_TYPE_SELL_LIMIT && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) {
+         SellTotal++;
+         pendingSell++;
+      }
    }
    
    for (int i=PositionsTotal()-1; i>=0; i--){
       posinfo.SelectByIndex(i);
       if(posinfo.PositionType() == POSITION_TYPE_BUY && posinfo.Symbol() == _Symbol && posinfo.Magic() == InpMagic) BuyTotal++; 
       if(posinfo.PositionType() == POSITION_TYPE_SELL && posinfo.Symbol() == _Symbol && posinfo.Magic() == InpMagic) SellTotal++;
+   }
+   
+   // check wrong order 
+   if (pendingBuy > 0 || pendingSell > 0) {
+      if (pendingBuy > 0 && ( sTrend < 0 
+         //|| gTrend < 0
+         )) {
+         // Close pending Buy
+         ClosePending(1);
+      } else if ( pendingSell > 0 && ( sTrend > 0 
+            //|| gTrend > 0
+            )) {
+         // Close pending Sell
+         ClosePending(-1);
+      }
    }
    
    if (accept_trade) {
@@ -1854,9 +1884,6 @@ void SendSellOrder(double entry) {
    trade.SellStop(lots, entry, _Symbol, sl, tp, ORDER_TIME_SPECIFIED, expiration);
 }
 
-
-
-
 double calcLots (double slPoints){
    double risk = AccountInfoDouble(ACCOUNT_BALANCE) * RiskPercent / 100;
    
@@ -1877,6 +1904,23 @@ double calcLots (double slPoints){
    //Print("-------------> Lots: "+ lots);
    return lots;
 
+}
+
+// Close all pending is Buy or Sell
+void ClosePending (int type) {
+   for(int i = OrdersTotal() - 1; i >= 0; i--) { // loop all Orders
+      if(ordinfo.SelectByIndex(i))  // select an order
+        {
+         if (ordinfo.Symbol() != _Symbol) continue;
+         if (
+               (type == 1 && ( ordinfo.OrderType() == ORDER_TYPE_BUY_STOP || ordinfo.OrderType() == ORDER_TYPE_BUY_LIMIT)) || 
+               (type == -1 && ( ordinfo.OrderType() == ORDER_TYPE_SELL_STOP || ordinfo.OrderType() == ORDER_TYPE_SELL_LIMIT))
+            ) {
+               trade.OrderDelete(ordinfo.Ticket()); // then delete it --period
+               Sleep(100); // Relax for 100 ms   
+            }
+        }
+    }
 }
 
 void CloseAllOrders() {
@@ -1910,7 +1954,9 @@ void CloseAllOrders() {
 
 double tFindHigh() {
    double tHigh = -1;
-   if (sTrend == 1 && gTrend > 0 && touchIdmHigh == 1 && ArraySize(arrPbHigh) > 1) {
+   if (sTrend == 1 
+      //&& gTrend > 0 
+      && touchIdmHigh == 1 && ArraySize(arrPbHigh) > 1) {
       tHigh = arrPbHigh[0];
    }
    return tHigh;
@@ -1918,7 +1964,9 @@ double tFindHigh() {
 
 double tFindLow() {
    double tLow = -1;
-   if (sTrend == -1 && gTrend < 0 && touchIdmLow == 1 && ArraySize(arrPbLow) > 1) {
+   if (sTrend == -1 
+      //&& gTrend < 0 
+      && touchIdmLow == 1 && ArraySize(arrPbLow) > 1) {
       tLow = arrPbLow[0];
    }
    return tLow;
