@@ -20,7 +20,7 @@
       input int                     TslTriggerPoints                 = 20;                // Points in Profit before Trailing Sl in actived (10 Points = 1 pip)
       input int                     TslPoints                        = 15;                // Trailing Stoploss Points (10 Points = 1 pip)
       input ENUM_TIMEFRAMES         InpTimeframe                     = PERIOD_CURRENT;    // Time frame to run
-      input int                     InpMagic                         = 298347;            // EA indentification no
+      input int                     InpMagic                         = 298368;            // EA indentification no
       input string                  TradeComment                     = "Scalping Robot";  //Trade Comment
       
       enum StartHour {Inactive=0, _1=1, _2=2, _3=3, _4=4, _5=5, _6=6, _7=7, _8=8, _9=9, _10=10, _11=11, _12=12, _13=13, _14=14, _15=15, _16=16, _17=17, _18=18, _19=19, _20=20, _21=21, _22=22, _23=23, _24=24 };
@@ -39,7 +39,7 @@
       string dotSpace = "----------------------------------------------------";
 
    input group "=== SMC settings ===" 
-
+bool isComment = false; // Show or Off comment => For develop object
 bool enabledComment = true;
 bool disableComment = false;
 MqlRates waveRates[],rates[];
@@ -362,7 +362,7 @@ int textCenter(int left, int right) {
 }
 
 string getValueTrend() {
-   string text =  "STrend: "+ (string) sTrend + " ; mTrend: "+(string) mTrend+ " ; iTrend: "+(string) iTrend+ " ; gTrend: "+(string) gTrend +" ; LastSwingMajor: "+(string) LastSwingMajor+ "\n"+
+   string text =  "STrend: "+ (string) sTrend + " ; mTrend: "+(string) mTrend+ " ; iTrend: "+(string) iTrend+ " ; gTrend: "+(string) gTrend + " ; LastSwingMajor: "+(string) LastSwingMajor+ "\n"+
                   " | findHigh: "+(string) findHigh+" idmHigh: "+(string) idmHigh+" ; findLow: "+(string) findLow+" idmLow: "+ (string) idmLow+
                    "; touchIdmHigh: " + (string) touchIdmHigh + "; touchIdmLow: " + (string) touchIdmLow + "\n"+
                   " | H: "+ (string) H +" - L: "+(string) L +" - highEst: "+(string) highEst +" - lowEst: "+(string) lowEst;
@@ -415,10 +415,13 @@ void realGannWave() {
    bar1 = rates[1];
    bar2 = rates[2];
    bar3 = rates[3];
-   //text += "--------------Real Gann Wave----------------";
-   //text += "\n "+inInfoBar(bar1, bar2, bar3);
-   //text += "\n First: "+getValueTrend();
-   //Print(text);
+   if (isComment) {
+      text += "--------------Real Gann Wave----------------";
+      text += "\n "+inInfoBar(bar1, bar2, bar3);
+      text += "\n First: "+getValueTrend();
+      Print(text);
+   }
+   
    int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
    updatePointTopBot(bar1, bar2, bar3, disableComment);
    
@@ -427,10 +430,12 @@ void realGannWave() {
    drawZone(bar1);
    
    setZone(bar1);
+   if (isComment) {
+      text = "\n Final: "+getValueTrend();
+      text += "\n ------------------------------------------------------ End ---------------------------------------------------------\n";
+      Print(text);
+   }
    
-   //text = "\n Final: "+getValueTrend();
-   //text += "\n ------------------------------------------------------ End ---------------------------------------------------------\n";
-   //Print(text);
 }
 
 void gannWave(){
@@ -438,10 +443,12 @@ void gannWave(){
    // danh dau vi tri bat dau
    createObj(waveRates[ArraySize(waveRates) - 1].time, waveRates[ArraySize(waveRates) - 1].low, 238, -1, clrRed, "Start");
    for (int j = ArraySize(waveRates) - 3; j >=0; j--){
+      if (isComment) {
+         Print("No:" + (string) j);
+         Print(inInfoBar(bar1, bar2, bar3));
+         Print("First: "+getValueTrend());
+      }
       
-      //Print("No:" + (string) j);
-      //Print(inInfoBar(bar1, bar2, bar3));
-      //Print("First: "+getValueTrend());
       bar1 = waveRates[j];
       bar2 = waveRates[j+1];
       bar3 = waveRates[j+2];
@@ -455,8 +462,11 @@ void gannWave(){
       
       setZone(bar1);
       
-      //Print("\n Final: "+getValueTrend());
-      //Print(" ------------------------------------------------------ End ---------------------------------------------------------\n");
+      if (isComment) {
+         Print("\n Final: "+getValueTrend());
+         Print(" ------------------------------------------------------ End ---------------------------------------------------------\n");
+      }
+      
    }
    // danh dau vi tri ket thuc
    createObj(waveRates[0].time, waveRates[0].low, 238, -1, clrRed, "Stop");
@@ -1134,9 +1144,9 @@ void updatePointTopBot(MqlRates& bar1, MqlRates& bar2, MqlRates& bar3, bool isCo
    }
    
    if(isComment) {
-      //text += "\n Last: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
+      text += "\n Last: STrend: "+ (string) sTrend + " - mTrend: "+(string) mTrend+" - LastSwingMajor: "+(string) LastSwingMajor+ " findHigh: "+(string) findHigh+" - idmHigh: "+(string) idmHigh+" findLow: "+(string) findLow+" - idmLow: "+(string) idmLow+" H: "+ (string) H +" - L: "+(string) L;
       Print(text);
-      //showComment();
+      showComment();
    }
 }
 
@@ -1765,7 +1775,8 @@ double showTotal() {
    } else {
       _text += " ; Get IDM : " + ((touchIdmLow == 1) ? "Yes": "No" );
    }
-   _text += " | minor trend => " + ((gTrend > 0) ? " iUpTrend": "iDownTrend" );
+   _text += " | minor trend => " + ((iTrend > 0) ? " iUpTrend": "iDownTrend" ) + (string) iTrend;
+   _text += " | gtrend => " + ((gTrend > 0) ? " gUpTrend": "gDownTrend" );
    
    Comment(_text+ "\n "+ dotSpace +"\n"+ text);
    return profit;
@@ -1829,11 +1840,13 @@ void beginTrade() {
    if (pendingBuy > 0 || pendingSell > 0) {
       if (pendingBuy > 0 && ( sTrend < 0 
          //|| gTrend < 0
+          || (gTrend < 0 && touchIdmHigh == 0)
          )) {
          // Close pending Buy
          ClosePending(1);
       } else if ( pendingSell > 0 && ( sTrend > 0 
             //|| gTrend > 0
+            || (gTrend > 0 && touchIdmLow == 0)
             )) {
          // Close pending Sell
          ClosePending(-1);
@@ -1847,7 +1860,10 @@ void beginTrade() {
       if (BuyTotal <= 0) {
          double tHigh = tFindHigh();
          //Print(" - tHigh: "+ (string) tHigh);
-         if (tHigh > 0) {
+         if (tHigh > 0) { // neu tim thay dinh da quet idm
+            SendBuyOrder(tHigh);
+         } else { // neu chua tim thay dinh quet idm
+            tHigh = tMinorFindHigh();
             SendBuyOrder(tHigh);
          }
       }
@@ -1856,6 +1872,9 @@ void beginTrade() {
          double tLow = tFindLow();
          //Print(" - tLow: "+ (string) tLow);
          if (tLow > 0) {
+            SendSellOrder(tLow);
+         }  else { // neu chua tim thay dinh quet idm
+            tLow = tMinorFindLow();
             SendSellOrder(tLow);
          }
       }
@@ -1954,7 +1973,7 @@ void CloseAllOrders() {
         }
     }
 }
-
+// Marjor swing
 double tFindHigh() {
    double tHigh = -1;
    if (sTrend == 1 
@@ -1971,6 +1990,24 @@ double tFindLow() {
       //&& gTrend < 0 
       && touchIdmLow == 1 && ArraySize(arrPbLow) > 1) {
       tLow = arrPbLow[0];
+   }
+   return tLow;
+}
+
+
+// Minnor Swing
+double tMinorFindHigh() {
+   double tHigh = -1;
+   if (sTrend == 1 && iTrend > 0 && gTrend > 0 && touchIdmHigh == 0 && ArraySize(intSHighs) > 1) {
+      tHigh = intSHighs[0];
+   }
+   return tHigh;
+}
+
+double tMinorFindLow() {
+   double tLow = -1;
+   if (sTrend == -1 && iTrend < 0 && gTrend < 0 && touchIdmLow == 0 && ArraySize(intSLows) > 1) {
+      tLow = intSLows[0];
    }
    return tLow;
 }
