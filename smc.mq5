@@ -7,6 +7,39 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
+#include <Trade\Trade.mqh>
+      CTrade                  trade;
+      CPositionInfo           posinfo;
+      COrderInfo              ordinfo;
+
+   input group "=== Trading Inputs ==="   
+      input double                  minVolume                        = 0.01;              // Min volume to start (Fixed volume + Risk Percent = 0)
+      input double                  RiskPercent                      = 2;                 // Risk as % of Trading Capital
+      input int                     Tppoints                         = 250;               // Take Profit (10 Points = 1 pip)
+      input int                     Slpoints                         = 100;               // Stoploss Points (10 Points = 1 pip)
+      input int                     TslTriggerPoints                 = 20;                // Points in Profit before Trailing Sl in actived (10 Points = 1 pip)
+      input int                     TslPoints                        = 15;                // Trailing Stoploss Points (10 Points = 1 pip)
+      input ENUM_TIMEFRAMES         InpTimeframe                     = PERIOD_CURRENT;    // Time frame to run
+      input int                     InpMagic                         = 298347;            // EA indentification no
+      input string                  TradeComment                     = "Scalping Robot";  //Trade Comment
+      
+      enum StartHour {Inactive=0, _1=1, _2=2, _3=3, _4=4, _5=5, _6=6, _7=7, _8=8, _9=9, _10=10, _11=11, _12=12, _13=13, _14=14, _15=15, _16=16, _17=17, _18=18, _19=19, _20=20, _21=21, _22=22, _23=23, _24=24 };
+      input StartHour SHInput = 0; // Start Hour
+      
+      enum EndHour {Inactive=0, _1=1, _2=2, _3=3, _4=4, _5=5, _6=6, _7=7, _8=8, _9=9, _10=10, _11=11, _12=12, _13=13, _14=14, _15=15, _16=16, _17=17, _18=18, _19=19, _20=20, _21=21, _22=22, _23=23, _24=24 };
+      input EndHour EHInput = 0; // End Hour
+      
+      int SHChoice;
+      int EHChoice;
+      
+      int         BarsN = 5;
+      int         ExpirationBars = 100;
+      int         OrderDistPoints= 0; // 100
+      
+      string dotSpace = "----------------------------------------------------";
+
+   input group "=== SMC settings ===" 
+
 bool enabledComment = true;
 bool disableComment = false;
 MqlRates waveRates[],rates[];
@@ -148,7 +181,18 @@ datetime arrLastLBar[];
 //+------------------------------------------------------------------+
 int OnInit()
   {
-//---
+   trade.SetExpertMagicNumber(InpMagic);
+   ChartSetInteger(0, CHART_SHOW_GRID, false);
+   //--- Disable autoscroll
+   ChartSetInteger(0,CHART_AUTOSCROLL,true);
+   //--- Set the indent of the right border of the chart
+   ChartSetInteger(0,CHART_SHIFT,true);
+   //--- Display as candlesticks
+   ChartSetInteger(0,CHART_MODE,CHART_CANDLES);
+   //--- Set the tick volume display mode
+   ChartSetInteger(0,CHART_SHOW_VOLUMES,CHART_VOLUME_TICK);
+   
+//--- SMC Init
    ArraySetAsSeries(waveRates, true);
    ArraySetAsSeries(rates, true);
    
@@ -157,7 +201,7 @@ int OnInit()
    
    // draw swing wave before function active
    gannWave();
-//---
+//--- End SMC Init
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -173,6 +217,8 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
+   TrailStop();
+   showTotal();
 //---
    int copied = CopyRates(_Symbol, PERIOD_CURRENT, 0, 50, rates);
    high = rates[1].high;
@@ -181,9 +227,9 @@ void OnTick()
    if(!IsNewBar()) return;
    
    realGannWave();
-//---
-   //bool isInsideBar = isb();
    
+   // Begin trade
+   beginTrade();
   }
 //+------------------------------------------------------------------+
 
@@ -369,12 +415,12 @@ void realGannWave() {
    bar1 = rates[1];
    bar2 = rates[2];
    bar3 = rates[3];
-   text += "--------------Real Gann Wave----------------";
-   text += "\n "+inInfoBar(bar1, bar2, bar3);
-   text += "\n First: "+getValueTrend();
-   Print(text);
-   int resultStructure = drawStructureInternal(bar1, bar2, bar3, enabledComment);
-   updatePointTopBot(bar1, bar2, bar3, enabledComment);
+   //text += "--------------Real Gann Wave----------------";
+   //text += "\n "+inInfoBar(bar1, bar2, bar3);
+   //text += "\n First: "+getValueTrend();
+   //Print(text);
+   int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
+   updatePointTopBot(bar1, bar2, bar3, disableComment);
    
    // POI
    getZoneValid();
@@ -382,9 +428,9 @@ void realGannWave() {
    
    setZone(bar1);
    
-   text = "\n Final: "+getValueTrend();
-   text += "\n ------------------------------------------------------ End ---------------------------------------------------------\n";
-   Print(text);
+   //text = "\n Final: "+getValueTrend();
+   //text += "\n ------------------------------------------------------ End ---------------------------------------------------------\n";
+   //Print(text);
 }
 
 void gannWave(){
@@ -393,15 +439,15 @@ void gannWave(){
    createObj(waveRates[ArraySize(waveRates) - 1].time, waveRates[ArraySize(waveRates) - 1].low, 238, -1, clrRed, "Start");
    for (int j = ArraySize(waveRates) - 3; j >=0; j--){
       
-      Print("No:" + (string) j);
-      Print(inInfoBar(bar1, bar2, bar3));
-      Print("First: "+getValueTrend());
+      //Print("No:" + (string) j);
+      //Print(inInfoBar(bar1, bar2, bar3));
+      //Print("First: "+getValueTrend());
       bar1 = waveRates[j];
       bar2 = waveRates[j+1];
       bar3 = waveRates[j+2];
       
-      int resultStructure = drawStructureInternal(bar1, bar2, bar3, enabledComment);
-      updatePointTopBot(bar1, bar2, bar3, enabledComment);
+      int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
+      updatePointTopBot(bar1, bar2, bar3, disableComment);
       
       // POI
       getZoneValid();
@@ -409,8 +455,8 @@ void gannWave(){
       
       setZone(bar1);
       
-      Print("\n Final: "+getValueTrend());
-      Print(" ------------------------------------------------------ End ---------------------------------------------------------\n");
+      //Print("\n Final: "+getValueTrend());
+      //Print(" ------------------------------------------------------ End ---------------------------------------------------------\n");
    }
    // danh dau vi tri ket thuc
    createObj(waveRates[0].time, waveRates[0].low, 238, -1, clrRed, "Stop");
@@ -458,11 +504,11 @@ void getZoneValid() {
    // Pre arr Decisional
    getDecisionalValue(disableComment);
    // Extreme Poi
-   setValueToZone(1, zArrPbHigh, zPoiExtremeHigh, enabledComment, "Extreme");
-   setValueToZone(-1, zArrPbLow, zPoiExtremeLow, enabledComment, "Extreme");
+   setValueToZone(1, zArrPbHigh, zPoiExtremeHigh, disableComment, "Extreme");
+   setValueToZone(-1, zArrPbLow, zPoiExtremeLow, disableComment, "Extreme");
    // Decisional Poi
-   setValueToZone(1, zArrDecisionalHigh, zPoiDecisionalHigh, enabledComment, "Decisional");
-   setValueToZone(-1, zArrDecisionalLow, zPoiDecisionalLow, enabledComment, "Decisional");
+   setValueToZone(1, zArrDecisionalHigh, zPoiDecisionalHigh, disableComment, "Decisional");
+   setValueToZone(-1, zArrDecisionalLow, zPoiDecisionalLow, disableComment, "Decisional");
 }
 
 void setValueToZone(int _type,PoiZone& zoneDefault[], PoiZone& zoneTarget[], bool isComment = false, string str_poi = ""){
@@ -1607,8 +1653,324 @@ bool IsLastBar() {
 // type = 1: check Break High , type = -1: check Break Low
 bool isBarBreak(MqlRates& bar1, MqlRates& bar2, int type) {
    bool result = false;
-   if ((type == 1 && bar1.close > bar2.high) || (type == -1 && bar1.close < bar2.low) ) {
+   //if ((type == 1 && bar1.close > bar2.high) || (type == -1 && bar1.close < bar2.low) ) { // Body break
+   if ((type == 1 && bar1.high > bar2.high) || (type == -1 && bar1.low < bar2.low) ) { // wick break
       result = true;
    }
    return result;
+}
+
+void TrailStop() {
+   double sl = 0;
+   double tp = 0;
+   
+   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   
+   for (int i = PositionsTotal() - 1; i>=0; i--) {
+      if (posinfo.SelectByIndex(i)) {
+         ulong ticket = posinfo.Ticket();
+         if ( posinfo.Magic() == InpMagic && posinfo.Symbol() == _Symbol) {
+            if (posinfo.PositionType() == POSITION_TYPE_BUY) {
+               if(bid - posinfo.PriceOpen() > TslTriggerPoints*_Point) {
+                  tp = posinfo.TakeProfit();
+                  sl = bid - (TslPoints * _Point);
+                  if (sl > posinfo.StopLoss() && sl != 0) {
+                     Print(dotSpace+" Modify Buy: "+ "Sl: "+ DoubleToString(sl, Digits()));
+                     trade.PositionModify(ticket,sl,tp);
+                  }
+               }
+            } 
+            else if (posinfo.PositionType() == POSITION_TYPE_SELL) {
+               if (ask + (TslTriggerPoints * _Point) < posinfo.PriceOpen()) {
+                  tp = posinfo.TakeProfit();
+                  sl = ask + (TslPoints * _Point);
+                  if (sl < posinfo.StopLoss() && sl != 0) {
+                     Print(dotSpace+" Modify Sell: "+ "Sl: "+ DoubleToString(sl, Digits()));
+                     trade.PositionModify(ticket,sl,tp);
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+
+double showTotal() {
+   MqlDateTime tm={};
+   //get the time server
+   datetime    time_server =TimeTradeServer(tm);
+   // get the local time
+   datetime ttime = TimeLocal();
+   
+   //formart the time and create a string
+   double CurrentTime = TimeToString(time_server, TIME_MINUTES);
+   
+   int tonglenh = 0;
+   int solenhbuy = 0;
+   int solenhsell = 0;
+   double profit = 0; 
+   double lotBuy = 0;
+   double lotSell =0;
+   
+   string text = 
+         "Today is "+ EnumToString((ENUM_DAY_OF_WEEK)tm.day_of_week)+"\n"
+         "Local Time = "+ (string) TimeToString(ttime, TIME_DATE) + " " +(string) TimeToString(ttime, TIME_SECONDS)+ "\n" 
+         "Server Time  = " +  (string) time_server+"\n"+
+         "Pair: "+_Symbol+" - "+ "Spread = "+ DoubleToString(SymbolInfoDouble(_Symbol, SYMBOL_ASK) - SymbolInfoDouble(_Symbol, SYMBOL_BID) , Digits()) +"\n"+
+         "Trading Time = "+ (string) SHInput+ " -> "+ (string) EHInput+ " (Server Time)\n"+
+         "---------" + "Settings EAs" + "---------" + "\n"+
+         "Risk: " + (string)( (RiskPercent > 0) ? (string) RiskPercent + "% Balance" : "Fixed Lot: "+ (string) minVolume) + "\n"+
+         "Take Profits: "+ DoubleToString(Tppoints*_Point, Digits()) + " Pip" + "\n"+
+         "Stop Loss: "+ DoubleToString(Slpoints*_Point, Digits()) + " Pip" + "\n"+
+         "Trigger Traling Stop: "+ DoubleToString(TslTriggerPoints*_Point, Digits()) + " Pip" + "\n"+
+         "Traling Stop: "+ DoubleToString(TslPoints*_Point,Digits()) + " Pip" + "\n"+
+         dotSpace+ "\n";
+         
+   string _text = "Running/ Pending Orders: "+ IntegerToString(PositionsTotal()) + "/ "+ IntegerToString(OrdersTotal());
+   for(int i=0;i<=PositionsTotal()-1;i++) {
+      ///_text += "\n Lenh :"+i+" : "+ PositionGetTicket(i);
+      // neu khong select duoc ticket thi bo qua
+      if(!PositionSelectByTicket(PositionGetTicket(i))) {
+         continue;
+      }
+      // neu khong dung symbol dang chay thi bo qua
+      string possym = PositionGetString(POSITION_SYMBOL); // eurusdc, usdjpy...
+      if (possym != Symbol()) {
+         continue;
+      }
+      ulong ticket = PositionGetInteger(POSITION_TICKET); // lay ticket cua order
+      ulong type = -1; // int dinh dang lai
+      type = PositionGetInteger(POSITION_TYPE); // loai lenh buy/ sell; type -> enum
+      if(type == POSITION_TYPE_BUY) {
+         solenhbuy ++;// solenhbuy = solenhbuy+1;
+         lotBuy += PositionGetDouble(POSITION_VOLUME);
+      }
+      if(type == POSITION_TYPE_SELL) {
+         solenhsell ++;// solenhsell = solenhsell+1;   
+         lotSell += PositionGetDouble(POSITION_VOLUME);
+      }
+      profit += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+   }
+   
+   //_text += "\nSo lenh Buy: "+ (string) solenhbuy +"; Volume Buy: "+DoubleToString(lotBuy,2);
+   //_text += "\nSo lenh Sell: "+ (string) solenhsell+"; Volume Sell: "+DoubleToString(lotSell,2);
+   _text += "\nBalance: "+ DoubleToString(AccountInfoDouble(ACCOUNT_BALANCE),2) +
+            ". Equity: "+DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY),2) +
+            ". Profit: "+ DoubleToString(AccountInfoDouble(ACCOUNT_PROFIT),2) + "\n" + dotSpace+ "\n";
+   _text += " Market Structure: \n";
+   _text += " Trend: Major => " + ((sTrend == 1) ? " UpTrend": "DownTrend" );
+   if (sTrend > 0) {
+      _text += " ; Get IDM : " + ((touchIdmHigh == 1) ? "Yes": "No" );
+   } else {
+      _text += " ; Get IDM : " + ((touchIdmLow == 1) ? "Yes": "No" );
+   }
+   _text += " | minor trend => " + ((gTrend > 0) ? " iUpTrend": "iDownTrend" );
+   
+   Comment(_text+ "\n "+ dotSpace +"\n"+ text);
+   return profit;
+}
+
+// start Trade 
+void beginTrade() {
+   string text = "";
+   MqlDateTime ttime;
+   TimeToStruct(TimeCurrent(), ttime);
+   
+   int Hournow = ttime.hour;
+   SHChoice = SHInput;
+   EHChoice = EHInput;
+   
+   bool accept_trade = true;
+   if (Hournow < SHChoice && SHChoice != 0) {
+      CloseAllOrders();
+      accept_trade = false;
+      return;
+   }
+   
+   if (Hournow >= EHChoice && EHChoice != 0) {
+      CloseAllOrders();
+      accept_trade = false;
+      return;
+   }
+   
+   int BuyTotal = 0;
+   int SellTotal = 0;
+   int pendingBuy = 0;
+   int pendingSell = 0;
+  
+   for (int i=OrdersTotal()-1; i>=0; i--){ 
+      ordinfo.SelectByIndex(i);
+      if (ordinfo.OrderType() == ORDER_TYPE_BUY_STOP && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) {
+         BuyTotal++;
+         pendingBuy++;  
+      }
+      if (ordinfo.OrderType() == ORDER_TYPE_SELL_STOP && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) {
+         SellTotal++;
+         pendingSell++;
+      } 
+      if (ordinfo.OrderType() == ORDER_TYPE_BUY_LIMIT && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) {
+         BuyTotal++;
+         pendingBuy++;
+      }
+      if (ordinfo.OrderType() == ORDER_TYPE_SELL_LIMIT && ordinfo.Symbol() == _Symbol && ordinfo.Magic() == InpMagic) {
+         SellTotal++;
+         pendingSell++;
+      }
+   }
+   
+   for (int i=PositionsTotal()-1; i>=0; i--){
+      posinfo.SelectByIndex(i);
+      if(posinfo.PositionType() == POSITION_TYPE_BUY && posinfo.Symbol() == _Symbol && posinfo.Magic() == InpMagic) BuyTotal++; 
+      if(posinfo.PositionType() == POSITION_TYPE_SELL && posinfo.Symbol() == _Symbol && posinfo.Magic() == InpMagic) SellTotal++;
+   }
+   
+   // check wrong order 
+   if (pendingBuy > 0 || pendingSell > 0) {
+      if (pendingBuy > 0 && ( sTrend < 0 
+         //|| gTrend < 0
+         )) {
+         // Close pending Buy
+         ClosePending(1);
+      } else if ( pendingSell > 0 && ( sTrend > 0 
+            //|| gTrend > 0
+            )) {
+         // Close pending Sell
+         ClosePending(-1);
+      }
+   }
+   
+   //Print("Begin Trade: \n"+ getValueTrend());
+   //Print("accept_trade is: "+ (string) accept_trade + " Buy total: " + (string) BuyTotal + "; Sell Total: "+ (string) SellTotal);
+   
+   if (accept_trade) {
+      if (BuyTotal <= 0) {
+         double tHigh = tFindHigh();
+         //Print(" - tHigh: "+ (string) tHigh);
+         if (tHigh > 0) {
+            SendBuyOrder(tHigh);
+         }
+      }
+         
+      if (SellTotal <= 0) {
+         double tLow = tFindLow();
+         //Print(" - tLow: "+ (string) tLow);
+         if (tLow > 0) {
+            SendSellOrder(tLow);
+         }
+      }
+   }
+   //text += "--------------- End Begin Trade -----------------";
+   //Print(text);
+}
+
+
+void SendBuyOrder(double entry) {
+   double ask = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+   if (ask > entry - OrderDistPoints * _Point) return;
+   double tp = entry + Tppoints * _Point;
+   double sl = entry - Slpoints * _Point;
+   double lots = 0.01;
+   if(RiskPercent > 0) lots = calcLots(entry - sl);
+   datetime expiration = iTime(_Symbol, Timeframe, 0) + ExpirationBars * PeriodSeconds(Timeframe);
+   trade.BuyStop(lots, entry, _Symbol, sl, tp, ORDER_TIME_SPECIFIED, expiration);
+}
+
+void SendSellOrder(double entry) {
+   double bid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
+   if (bid < entry + OrderDistPoints * _Point) return;
+   double tp = entry - Tppoints * _Point;
+   double sl = entry + Slpoints * _Point;
+   double lots = 0.01;
+   if(RiskPercent > 0) lots = calcLots(sl - entry);
+   datetime expiration = iTime(_Symbol, Timeframe, 0) + ExpirationBars * PeriodSeconds(Timeframe);
+   trade.SellStop(lots, entry, _Symbol, sl, tp, ORDER_TIME_SPECIFIED, expiration);
+}
+
+double calcLots (double slPoints){
+   double risk = AccountInfoDouble(ACCOUNT_BALANCE) * RiskPercent / 100;
+   
+   double ticksize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE); 
+   double tickvalue = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE); 
+   double lotstep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP); 
+   double minvolume=SymbolInfoDouble (Symbol(), SYMBOL_VOLUME_MIN); 
+   double maxvolume=SymbolInfoDouble (Symbol(), SYMBOL_VOLUME_MAX); 
+   double volumelimit = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_LIMIT);
+
+   double moneyPerLotstep = slPoints / ticksize * tickvalue * lotstep; 
+   double lots = MathFloor(risk / moneyPerLotstep) * lotstep;
+   
+   if(volumelimit!=0) lots = MathMin(lots, volumelimit);
+   if(maxvolume!=0) lots = MathMin(lots, SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX)); 
+   if(minvolume!=0) lots = MathMax (lots, SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN)); 
+   lots = NormalizeDouble(lots,2);
+   //Print("-------------> Lots: "+ lots);
+   return lots;
+
+}
+
+// Close all pending is Buy or Sell
+void ClosePending (int type) {
+   for(int i = OrdersTotal() - 1; i >= 0; i--) { // loop all Orders
+      if(ordinfo.SelectByIndex(i))  // select an order
+        {
+         if (ordinfo.Symbol() != _Symbol) continue;
+         if (
+               (type == 1 && ( ordinfo.OrderType() == ORDER_TYPE_BUY_STOP || ordinfo.OrderType() == ORDER_TYPE_BUY_LIMIT)) || 
+               (type == -1 && ( ordinfo.OrderType() == ORDER_TYPE_SELL_STOP || ordinfo.OrderType() == ORDER_TYPE_SELL_LIMIT))
+            ) {
+               trade.OrderDelete(ordinfo.Ticket()); // then delete it --period
+               Sleep(100); // Relax for 100 ms   
+            }
+        }
+    }
+}
+
+void CloseAllOrders() {
+   for(int i = PositionsTotal() - 1; i >= 0; i--) { // loop all Open Positions
+      if(posinfo.SelectByIndex(i))  // select a position
+        {
+         trade.PositionClose(posinfo.Ticket()); // then close it --period
+         Sleep(100); // Relax for 100 ms
+        }
+    }
+//--End Đóng Positions
+
+//--Đóng Orders
+   for(int i = OrdersTotal() - 1; i >= 0; i--) { // loop all Orders
+      if(ordinfo.SelectByIndex(i))  // select an order
+        {
+         trade.OrderDelete(ordinfo.Ticket()); // then delete it --period
+         Sleep(100); // Relax for 100 ms
+        }
+    }
+//--End Đóng Orders
+//--Đóng Positions lần 2 cho chắc
+   for(int i = PositionsTotal() - 1; i >= 0; i--) { // loop all Open Positions
+      if(posinfo.SelectByIndex(i))  // select a position
+        {
+         trade.PositionClose(posinfo.Ticket()); // then close it --period
+         Sleep(100); // Relax for 100 ms
+        }
+    }
+}
+
+double tFindHigh() {
+   double tHigh = -1;
+   if (sTrend == 1 
+      //&& gTrend > 0 
+      && touchIdmHigh == 1 && ArraySize(arrPbHigh) > 1) {
+      tHigh = arrPbHigh[0];
+   }
+   return tHigh;
+}
+
+double tFindLow() {
+   double tLow = -1;
+   if (sTrend == -1 
+      //&& gTrend < 0 
+      && touchIdmLow == 1 && ArraySize(arrPbLow) > 1) {
+      tLow = arrPbLow[0];
+   }
+   return tLow;
 }
