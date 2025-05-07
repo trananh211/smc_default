@@ -15,26 +15,26 @@
    input group "=== Trading Inputs ==="   
       input double                  minVolume                        = 0.01;              // Min volume to start (Fixed volume + Risk Percent = 0)
       input double                  RiskPercent                      = 2;                 // Risk as % of Trading Capital
-      input int                     Tppoints                         = 350;               // Take Profit (10 Points = 1 pip)
-      input int                     Slpoints                         = 250;               // Stoploss Points (10 Points = 1 pip)
+      input int                     Tppoints                         = 250;               // Take Profit (10 Points = 1 pip)
+      input int                     Slpoints                         = 100;               // Stoploss Points (10 Points = 1 pip)
       input int                     TslTriggerPoints                 = 20;                // Points in Profit before Trailing Sl in actived (10 Points = 1 pip)
-      input int                     TslPoints                        = 10;                // Trailing Stoploss Points (10 Points = 1 pip)
+      input int                     TslPoints                        = 15;                // Trailing Stoploss Points (10 Points = 1 pip)
       input ENUM_TIMEFRAMES         InpTimeframe                     = PERIOD_CURRENT;    // Time frame to run
       input int                     InpMagic                         = 298347;            // EA indentification no
       input string                  TradeComment                     = "Scalping Robot";  //Trade Comment
       
       enum StartHour {Inactive=0, _1=1, _2=2, _3=3, _4=4, _5=5, _6=6, _7=7, _8=8, _9=9, _10=10, _11=11, _12=12, _13=13, _14=14, _15=15, _16=16, _17=17, _18=18, _19=19, _20=20, _21=21, _22=22, _23=23, _24=24 };
-      input StartHour SHInput = 6; // Start Hour
+      input StartHour SHInput = 0; // Start Hour
       
       enum EndHour {Inactive=0, _1=1, _2=2, _3=3, _4=4, _5=5, _6=6, _7=7, _8=8, _9=9, _10=10, _11=11, _12=12, _13=13, _14=14, _15=15, _16=16, _17=17, _18=18, _19=19, _20=20, _21=21, _22=22, _23=23, _24=24 };
-      input EndHour EHInput = 21; // End Hour
+      input EndHour EHInput = 0; // End Hour
       
       int SHChoice;
       int EHChoice;
       
       int         BarsN = 5;
       int         ExpirationBars = 100;
-      int         OrderDistPoints= 100;
+      int         OrderDistPoints= 0; // 100
       
       string dotSpace = "----------------------------------------------------";
 
@@ -224,12 +224,10 @@ void OnTick()
    high = rates[1].high;
    low = rates[1].low;
    
-   
    if(!IsNewBar()) return;
    
    realGannWave();
-//---
-   //bool isInsideBar = isb();
+   
    // Begin trade
    beginTrade();
   }
@@ -417,10 +415,10 @@ void realGannWave() {
    bar1 = rates[1];
    bar2 = rates[2];
    bar3 = rates[3];
-   text += "--------------Real Gann Wave----------------";
-   text += "\n "+inInfoBar(bar1, bar2, bar3);
-   text += "\n First: "+getValueTrend();
-   Print(text);
+   //text += "--------------Real Gann Wave----------------";
+   //text += "\n "+inInfoBar(bar1, bar2, bar3);
+   //text += "\n First: "+getValueTrend();
+   //Print(text);
    int resultStructure = drawStructureInternal(bar1, bar2, bar3, disableComment);
    updatePointTopBot(bar1, bar2, bar3, disableComment);
    
@@ -430,9 +428,9 @@ void realGannWave() {
    
    setZone(bar1);
    
-   text = "\n Final: "+getValueTrend();
-   text += "\n ------------------------------------------------------ End ---------------------------------------------------------\n";
-   Print(text);
+   //text = "\n Final: "+getValueTrend();
+   //text += "\n ------------------------------------------------------ End ---------------------------------------------------------\n";
+   //Print(text);
 }
 
 void gannWave(){
@@ -441,9 +439,9 @@ void gannWave(){
    createObj(waveRates[ArraySize(waveRates) - 1].time, waveRates[ArraySize(waveRates) - 1].low, 238, -1, clrRed, "Start");
    for (int j = ArraySize(waveRates) - 3; j >=0; j--){
       
-      Print("No:" + (string) j);
-      Print(inInfoBar(bar1, bar2, bar3));
-      Print("First: "+getValueTrend());
+      //Print("No:" + (string) j);
+      //Print(inInfoBar(bar1, bar2, bar3));
+      //Print("First: "+getValueTrend());
       bar1 = waveRates[j];
       bar2 = waveRates[j+1];
       bar3 = waveRates[j+2];
@@ -457,8 +455,8 @@ void gannWave(){
       
       setZone(bar1);
       
-      Print("\n Final: "+getValueTrend());
-      Print(" ------------------------------------------------------ End ---------------------------------------------------------\n");
+      //Print("\n Final: "+getValueTrend());
+      //Print(" ------------------------------------------------------ End ---------------------------------------------------------\n");
    }
    // danh dau vi tri ket thuc
    createObj(waveRates[0].time, waveRates[0].low, 238, -1, clrRed, "Stop");
@@ -1842,9 +1840,13 @@ void beginTrade() {
       }
    }
    
+   //Print("Begin Trade: \n"+ getValueTrend());
+   //Print("accept_trade is: "+ (string) accept_trade + " Buy total: " + (string) BuyTotal + "; Sell Total: "+ (string) SellTotal);
+   
    if (accept_trade) {
       if (BuyTotal <= 0) {
          double tHigh = tFindHigh();
+         //Print(" - tHigh: "+ (string) tHigh);
          if (tHigh > 0) {
             SendBuyOrder(tHigh);
          }
@@ -1852,12 +1854,13 @@ void beginTrade() {
          
       if (SellTotal <= 0) {
          double tLow = tFindLow();
+         //Print(" - tLow: "+ (string) tLow);
          if (tLow > 0) {
             SendSellOrder(tLow);
          }
       }
    }
-   text += "--------------- End Begin Trade -----------------";
+   //text += "--------------- End Begin Trade -----------------";
    //Print(text);
 }
 
