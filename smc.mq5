@@ -19,9 +19,13 @@
       input int                     Slpoints                         = 100;               // Stoploss Points (10 Points = 1 pip)
       input int                     TslTriggerPoints                 = 20;                // Points in Profit before Trailing Sl in actived (10 Points = 1 pip)
       input int                     TslPoints                        = 15;                // Trailing Stoploss Points (10 Points = 1 pip)
+      input int                     InpMaxSpread                     = 15;                // Max spread accept trade
       input ENUM_TIMEFRAMES         InpTimeframe                     = PERIOD_CURRENT;    // Time frame to run
       input int                     InpMagic                         = 298368;            // EA indentification no
-      input string                  TradeComment                     = "Scalping Robot";  //Trade Comment
+      input string                  TradeComment                     = "Scalping Robot";  //Trade Comment                  
+      
+      enum typeTrade {Marjor = 0, Minnor = 1};
+      input typeTrade               InpTrade                         = 0;                 // Type go to trade of major struct or minor struct 
       
       enum StartHour {Inactive=0, _1=1, _2=2, _3=3, _4=4, _5=5, _6=6, _7=7, _8=8, _9=9, _10=10, _11=11, _12=12, _13=13, _14=14, _15=15, _16=16, _17=17, _18=18, _19=19, _20=20, _21=21, _22=22, _23=23, _24=24 };
       input StartHour SHInput = 0; // Start Hour
@@ -34,12 +38,12 @@
       
       int         BarsN = 5;
       int         ExpirationBars = 100;
-      int         OrderDistPoints= 0; // 100
+      int         OrderDistPoints= 15; // 100
       
       string dotSpace = "----------------------------------------------------";
 
    input group "=== SMC settings ===" 
-bool isComment = false; // Show or Off comment => For develop object
+bool gComment = false; // Show or Off comment => For develop object
 bool enabledComment = true;
 bool disableComment = false;
 MqlRates waveRates[],rates[];
@@ -415,7 +419,7 @@ void realGannWave() {
    bar1 = rates[1];
    bar2 = rates[2];
    bar3 = rates[3];
-   if (isComment) {
+   if (gComment) {
       text += "--------------Real Gann Wave----------------";
       text += "\n "+inInfoBar(bar1, bar2, bar3);
       text += "\n First: "+getValueTrend();
@@ -430,7 +434,7 @@ void realGannWave() {
    drawZone(bar1);
    
    setZone(bar1);
-   if (isComment) {
+   if (gComment) {
       text = "\n Final: "+getValueTrend();
       text += "\n ------------------------------------------------------ End ---------------------------------------------------------\n";
       Print(text);
@@ -443,7 +447,7 @@ void gannWave(){
    // danh dau vi tri bat dau
    createObj(waveRates[ArraySize(waveRates) - 1].time, waveRates[ArraySize(waveRates) - 1].low, 238, -1, clrRed, "Start");
    for (int j = ArraySize(waveRates) - 3; j >=0; j--){
-      if (isComment) {
+      if (gComment) {
          Print("No:" + (string) j);
          Print(inInfoBar(bar1, bar2, bar3));
          Print("First: "+getValueTrend());
@@ -462,7 +466,7 @@ void gannWave(){
       
       setZone(bar1);
       
-      if (isComment) {
+      if (gComment) {
          Print("\n Final: "+getValueTrend());
          Print(" ------------------------------------------------------ End ---------------------------------------------------------\n");
       }
@@ -1713,8 +1717,8 @@ double showTotal() {
    // get the local time
    datetime ttime = TimeLocal();
    
-   //formart the time and create a string
-   double CurrentTime = TimeToString(time_server, TIME_MINUTES);
+   ////formart the time and create a string
+   //string CurrentTime = TimeToString(time_server, TIME_MINUTES);
    
    int tonglenh = 0;
    int solenhbuy = 0;
@@ -1793,6 +1797,13 @@ void beginTrade() {
    EHChoice = EHInput;
    
    bool accept_trade = true;
+   double cSpread = SymbolInfoDouble(_Symbol, SYMBOL_ASK) - SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   if (InpMaxSpread*_Point < cSpread) {
+      CloseAllOrders();
+      accept_trade = false;
+      return;
+   }
+   
    if (Hournow < SHChoice && SHChoice != 0) {
       CloseAllOrders();
       accept_trade = false;
@@ -1839,14 +1850,14 @@ void beginTrade() {
    // check wrong order 
    if (pendingBuy > 0 || pendingSell > 0) {
       if (pendingBuy > 0 && ( sTrend < 0 
-         //|| gTrend < 0
-          || (gTrend < 0 && touchIdmHigh == 0)
+         //|| (InpTrade == 0 && gTrend < 0)
+          || (InpTrade == 1 && gTrend < 0 && touchIdmHigh == 0)
          )) {
          // Close pending Buy
          ClosePending(1);
       } else if ( pendingSell > 0 && ( sTrend > 0 
-            //|| gTrend > 0
-            || (gTrend > 0 && touchIdmLow == 0)
+            //|| (InpTrade == 0 && gTrend > 0)
+            || (InpTrade == 1 && gTrend > 0 && touchIdmLow == 0)
             )) {
          // Close pending Sell
          ClosePending(-1);
@@ -1863,8 +1874,11 @@ void beginTrade() {
          if (tHigh > 0) { // neu tim thay dinh da quet idm
             SendBuyOrder(tHigh);
          } else { // neu chua tim thay dinh quet idm
-            tHigh = tMinorFindHigh();
-            SendBuyOrder(tHigh);
+            if (InpTrade == 1) { // neu cau truc vao lenh la minor
+               tHigh = tMinorFindHigh();
+               SendBuyOrder(tHigh);
+            }
+            
          }
       }
          
@@ -1874,8 +1888,10 @@ void beginTrade() {
          if (tLow > 0) {
             SendSellOrder(tLow);
          }  else { // neu chua tim thay dinh quet idm
-            tLow = tMinorFindLow();
-            SendSellOrder(tLow);
+            if (InpTrade == 1) { // neu cau truc vao lenh la minor
+               tLow = tMinorFindLow();
+               SendSellOrder(tLow);
+            }
          }
       }
    }
