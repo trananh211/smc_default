@@ -40,7 +40,7 @@
       
       int         BarsN = 5;
       int         ExpirationBars = 100;
-      int         OrderDistPoints= 100; // 100
+      int         OrderDistPoints= InpMaxSpread; // 100
       
       input int                     InpMagic                         = 298368;            // EA indentification no
       input string                  TradeComment                     = "SMC Scalping";    //Trade Comment   
@@ -1687,7 +1687,6 @@ void TrailStop() {
    
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
-   double spread = ask - bid;
    
    for (int i = PositionsTotal() - 1; i>=0; i--) {
       if (posinfo.SelectByIndex(i)) {
@@ -1874,10 +1873,14 @@ void beginTrade() {
             ClosePending(-1);
          }
       } else if (InpWayTrade == 2) { // Neu kich hoat trade 2 chieu Marjor
-         if ((sTrend == 1 && touchIdmHigh == 0) || (sTrend == -1 && touchIdmLow == 0)) {
-            ClosePending(1);
+         if (sTrend == 1 && touchIdmHigh == 0) {
             ClosePending(-1);
          }
+         
+         if (sTrend == -1 && touchIdmLow == 0) {
+            ClosePending(1);
+         }
+         
       }
       
    }
@@ -2056,7 +2059,7 @@ double tFindHigh() {
    double tHigh = -1;
    if (sTrend == 1 
       //&& gTrend > 0 
-      && touchIdmHigh == 1 && ArraySize(arrPbHigh) > 1) {
+      && touchIdmHigh == 1 && ArraySize(arrPbHigh) > 1 && arrPbHigh[0] >= intSHighs[0]) {
       tHigh = arrPbHigh[0];
    }
    return tHigh;
@@ -2066,7 +2069,7 @@ double tFindLow() {
    double tLow = -1;
    if (sTrend == -1 
       //&& gTrend < 0 
-      && touchIdmLow == 1 && ArraySize(arrPbLow) > 1) {
+      && touchIdmLow == 1 && ArraySize(arrPbLow) > 1 && arrPbLow[0] <= intSLows[0]) {
       tLow = arrPbLow[0];
    }
    return tLow;
@@ -2095,7 +2098,7 @@ double tMinorFindLow() {
 
 double tGetHigh() {
    double tHigh = -1;
-   if ((sTrend == 1 || (sTrend == -1 && touchIdmLow == 1)) && ArraySize(arrPbHigh) > 1) {
+   if ((sTrend == 1 || (sTrend == -1 && touchIdmLow == 1)) && ArraySize(arrPbHigh) > 1 && arrPbHigh[0] >= intSHighs[0]) {
       tHigh = arrPbHigh[0];
    }
    return tHigh;
@@ -2103,7 +2106,7 @@ double tGetHigh() {
 
 double tGetLow() {
    double tLow = -1;
-   if ((sTrend == -1 || (sTrend == 1 && touchIdmHigh == 1))&& ArraySize(arrPbLow) > 1) {
+   if ((sTrend == -1 || (sTrend == 1 && touchIdmHigh == 1))&& ArraySize(arrPbLow) > 1 && arrPbLow[0] <= intSLows[0]) {
       tLow = arrPbLow[0];
    }
    return tLow;
