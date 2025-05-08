@@ -16,13 +16,15 @@
       input double                  minVolume                        = 0.01;              // Min volume to start (Fixed volume + Risk Percent = 0)
       input double                  RiskPercent                      = 2;                 // Risk as % of Trading Capital
       input int                     Tppoints                         = 250;               // Take Profit (10 Points = 1 pip)
-      input int                     Slpoints                         = 100;               // Stoploss Points (10 Points = 1 pip)
-      input int                     TslTriggerPoints                 = 20;                // Points in Profit before Trailing Sl in actived (10 Points = 1 pip)
+      input int                     Slpoints                         = 150;               // Stoploss Points (10 Points = 1 pip)
+      input int                     TslTriggerPoints                 = 30;                // Points in Profit before Trailing Sl in actived (10 Points = 1 pip)
       input int                     TslPoints                        = 15;                // Trailing Stoploss Points (10 Points = 1 pip)
+      
+      enum wayTrade { one_way = 1, two_way = 2};
+      input wayTrade                InpWayTrade                      = 1;                 // Enable 1-way or 2-way trading
+      
       input int                     InpMaxSpread                     = 15;                // Max spread accept trade
       input ENUM_TIMEFRAMES         InpTimeframe                     = PERIOD_CURRENT;    // Time frame to run
-      input int                     InpMagic                         = 298368;            // EA indentification no
-      input string                  TradeComment                     = "Scalping Robot";  //Trade Comment                  
       
       enum typeTrade {Marjor = 0, Minnor = 1};
       input typeTrade               InpTrade                         = 0;                 // Type go to trade of major struct or minor struct 
@@ -38,147 +40,152 @@
       
       int         BarsN = 5;
       int         ExpirationBars = 100;
-      int         OrderDistPoints= 15; // 100
+      int         OrderDistPoints= 100; // 100
       
+      input int                     InpMagic                         = 298368;            // EA indentification no
+      input string                  TradeComment                     = "SMC Scalping";    //Trade Comment   
       string dotSpace = "----------------------------------------------------";
 
-   input group "=== SMC settings ===" 
-bool gComment = false; // Show or Off comment => For develop object
-bool enabledComment = true;
-bool disableComment = false;
-MqlRates waveRates[],rates[];
-double high, low, high2, low2;
-datetime time, time2;
-
-int GANN_STRUCTURE = 1;
-int INTERNAL_STRUCTURE = 2;
-int INTERNAL_STRUCTURE_KEY = 3;
-int MAJOR_STRUCTURE = 4;
-bool enabledDraw = true;
-bool disableDraw = false;
-
-// Gann Wave
-double highEst, lowEst;
-double Highs[], Lows[];
-datetime hightime, lowtime;
-datetime HighsTime[], LowsTime[];
-int LastSwingMeter = 0; // finding high or low 1 is high; -1 is low
-int gTrend = 0; // Gann trend    : trend is Up wave or Down wave, 1 is Up; -1 is Down
-
-// Internal Structure
-double intSHighs[], intSLows[];
-datetime intSHighTime[], intSLowTime[];
-int LastSwingInternal = 0; // finding high or low 1 is high; -1 is low
-int iTrend = 0; // Minor trend   : trend is Up wave or Down wave, 1 is Up; -1 is down 
-
-
-// array pullback swing high or low
-double arrTop[], arrBot[];
-datetime arrTopTime[], arrBotTime[];
-int mTrend = 0; // Marjor trend  : trend is Up wave or Down wave, 1 is Up; -1 is down 
-int sTrend = 0; // Super trend   : trend is Up wave or Down wave, 1 is Up; -1 is down 
-datetime arrPbHTime[];
-double arrPbHigh[];
-datetime arrPbLTime[];
-double arrPbLow[];
-
-double arrChoHigh[], arrChoLow[];
-datetime arrChoHighTime[], arrChoLowTime[];
-double arrBoHigh[], arrBoLow[];
-datetime arrBoHighTime[], arrBoLowTime[];
-
-int LastSwingMajor = 0; // finding high or low 1 is high; -1 is low
-//high low
-//double puHigh, puLow, L, H, idmLow, idmHigh, lastH, lastL, H_lastH, L_lastHH, H_lastLL, L_lastL, motherHigh, motherLow;
-datetime lastTimeH = 0;
-datetime lastTimeL = 0;
-double L, H, idmLow, idmHigh, L_idmLow, L_idmHigh , lastH, lastL, H_lastH, L_lastHH, H_lastLL, L_lastL, motherHigh, motherLow;
-double findHigh, findLow;
-int touchIdmHigh, touchIdmLow;
-MqlRates L_bar, H_bar;
-
-//bar indexes
-//datetime motherBar, puBar, puHBar, puLBar, idmLBar, idmHBar, HBar, LBar, lastHBar, lastLBar;
-datetime idmLowTime, idmHighTime, L_idmLowTime, L_idmHighTime , HTime, LTime;
-
-//structure confirm
-//bool mnStrc, prevMnStrc, isPrevBos, findIDM, isBosUp, isBosDn, isCocUp, isCocDn;
-
-// POI
-struct PoiZone {
-   double high, low, open, close;
-   datetime time;
-   int mitigated;
-   double priceKey;
-   datetime timeKey;
-};
-PoiZone zHighs[], zLows[], zIntSHighs[], zIntSLows[], zArrTop[], zArrBot[];
-PoiZone zArrPbHigh[], zArrPbLow[];
-// Extreme Poi
-PoiZone zPoiExtremeLow[], zPoiExtremeHigh[], zPoiLow[], zPoiHigh[];
-// Decisional Poi
-PoiZone zPoiDecisionalLow[], zPoiDecisionalHigh[];
-double arrDecisionalHigh[], arrDecisionalLow[];
-datetime arrDecisionalHighTime[], arrDecisionalLowTime[];
-PoiZone zArrDecisionalHigh[], zArrDecisionalLow[];
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+   bool gComment = false; // Show or Off comment => For develop object
+   bool enabledComment = true;
+   bool disableComment = false;
+   MqlRates waveRates[],rates[];
+   double high, low, high2, low2;
+   datetime time, time2;
+   
+   int GANN_STRUCTURE = 1;
+   int INTERNAL_STRUCTURE = 2;
+   int INTERNAL_STRUCTURE_KEY = 3;
+   int MAJOR_STRUCTURE = 4;
+   bool enabledDraw = true;
+   bool disableDraw = false;
+   
+   // Gann Wave
+   double highEst, lowEst;
+   double Highs[], Lows[];
+   datetime hightime, lowtime;
+   datetime HighsTime[], LowsTime[];
+   int LastSwingMeter = 0; // finding high or low 1 is high; -1 is low
+   int gTrend = 0; // Gann trend    : trend is Up wave or Down wave, 1 is Up; -1 is Down
+   
+   // Internal Structure
+   double intSHighs[], intSLows[];
+   datetime intSHighTime[], intSLowTime[];
+   int LastSwingInternal = 0; // finding high or low 1 is high; -1 is low
+   int iTrend = 0; // Minor trend   : trend is Up wave or Down wave, 1 is Up; -1 is down 
+   
+   
+   // array pullback swing high or low
+   double arrTop[], arrBot[];
+   datetime arrTopTime[], arrBotTime[];
+   int mTrend = 0; // Marjor trend  : trend is Up wave or Down wave, 1 is Up; -1 is down 
+   int sTrend = 0; // Super trend   : trend is Up wave or Down wave, 1 is Up; -1 is down 
+   datetime arrPbHTime[];
+   double arrPbHigh[];
+   datetime arrPbLTime[];
+   double arrPbLow[];
+   
+   double arrChoHigh[], arrChoLow[];
+   datetime arrChoHighTime[], arrChoLowTime[];
+   double arrBoHigh[], arrBoLow[];
+   datetime arrBoHighTime[], arrBoLowTime[];
+   
+   int LastSwingMajor = 0; // finding high or low 1 is high; -1 is low
+   //high low
+   //double puHigh, puLow, L, H, idmLow, idmHigh, lastH, lastL, H_lastH, L_lastHH, H_lastLL, L_lastL, motherHigh, motherLow;
+   datetime lastTimeH = 0;
+   datetime lastTimeL = 0;
+   double L, H, idmLow, idmHigh, L_idmLow, L_idmHigh , lastH, lastL, H_lastH, L_lastHH, H_lastLL, L_lastL, motherHigh, motherLow;
+   double findHigh, findLow;
+   int touchIdmHigh, touchIdmLow;
+   MqlRates L_bar, H_bar;
+   
+   //bar indexes
+   //datetime motherBar, puBar, puHBar, puLBar, idmLBar, idmHBar, HBar, LBar, lastHBar, lastLBar;
+   datetime idmLowTime, idmHighTime, L_idmLowTime, L_idmHighTime , HTime, LTime;
+   
+   //structure confirm
+   //bool mnStrc, prevMnStrc, isPrevBos, findIDM, isBosUp, isBosDn, isCocUp, isCocDn;
+   
+   // POI
+   struct PoiZone {
+      double high, low, open, close;
+      datetime time;
+      int mitigated;
+      double priceKey;
+      datetime timeKey;
+   };
+   PoiZone zHighs[], zLows[], zIntSHighs[], zIntSLows[], zArrTop[], zArrBot[];
+   PoiZone zArrPbHigh[], zArrPbLow[];
+   // Extreme Poi
+   PoiZone zPoiExtremeLow[], zPoiExtremeHigh[], zPoiLow[], zPoiHigh[];
+   // Decisional Poi
+   PoiZone zPoiDecisionalLow[], zPoiDecisionalHigh[];
+   double arrDecisionalHigh[], arrDecisionalLow[];
+   datetime arrDecisionalHighTime[], arrDecisionalLowTime[];
+   PoiZone zArrDecisionalHigh[], zArrDecisionalLow[];
 
 //---
 //--- -----------------------------------------------------------------
 //---
-input ENUM_TIMEFRAMES Timeframe = PERIOD_CURRENT;
-//#region variable declaration
-input int _PointSpace = 1000; // space for draw with swing, line
-input int poi_limit = 30; // poi limit save to array
-
-//Constant
-string IDM_TEXT = "idm";
-string IDM_TEXT_LIVE = "idm-l";
-string CHOCH_TEXT = "CHoCH";
-string I_CHOCH_TEXT = "i-choch";
-string BOS_TEXT = "BOS";
-string I_BOS_TEXT = "i-bos";
-string PDH_TEXT = "PDH";
-string PDL_TEXT = "PDL";
-string MID_TEXT = "0.5";
-string ULTRAVOLUME = " has UltraVolume";
-string SWEEPT = "";
-
-int iWingding_gann_high = 159;
-int iWingding_gann_low = 159;
-int iWingding_internal_high = 225;
-int iWingding_internal_low = 226;
-int iWingding_internal_key_high = 225;
-int iWingding_internal_key_low = 226;
-
-//poi
-bool isSweepOBS = false;
-int current_OBS = 0;
-double high_MOBS ,low_MOBS;
-
-bool isSweepOBD = false;
-int current_OBD;
-double low_MOBD;
-double high_MOBD;
-
-//demandZone[];
-//supplyZone[];
-//mitigatedZoneSupply[];
-//mitigatedZoneDemand[];
-
-double arrIdmHigh[];
-double arrIdmLow[];
-datetime arrIdmHBar[];
-datetime arrIdmLBar[];
-double arrLastH[];
-datetime arrLastHBar[];
-double arrLastL[];
-datetime arrLastLBar[];
-//arrIdmLine[];
-//arrIdmLabel[];
-//arrBCLine[];
-//arrBCLabel[];
-//arrHLLabel[];
-//arrHLCircle[];
+   input group "=== SMC settings ===" 
+      input ENUM_TIMEFRAMES Timeframe = PERIOD_CURRENT;
+      //#region variable declaration
+      input int _PointSpace = 1000; // space for draw with swing, line
+      input int poi_limit = 30; // poi limit save to array
+   
+   //Constant
+   string IDM_TEXT = "idm";
+   string IDM_TEXT_LIVE = "idm-l";
+   string CHOCH_TEXT = "CHoCH";
+   string I_CHOCH_TEXT = "i-choch";
+   string BOS_TEXT = "BOS";
+   string I_BOS_TEXT = "i-bos";
+   string PDH_TEXT = "PDH";
+   string PDL_TEXT = "PDL";
+   string MID_TEXT = "0.5";
+   string ULTRAVOLUME = " has UltraVolume";
+   string SWEEPT = "";
+   
+   int iWingding_gann_high = 159;
+   int iWingding_gann_low = 159;
+   int iWingding_internal_high = 225;
+   int iWingding_internal_low = 226;
+   int iWingding_internal_key_high = 225;
+   int iWingding_internal_key_low = 226;
+   
+   //poi
+   bool isSweepOBS = false;
+   int current_OBS = 0;
+   double high_MOBS ,low_MOBS;
+   
+   bool isSweepOBD = false;
+   int current_OBD;
+   double low_MOBD;
+   double high_MOBD;
+   
+   //demandZone[];
+   //supplyZone[];
+   //mitigatedZoneSupply[];
+   //mitigatedZoneDemand[];
+   
+   double arrIdmHigh[];
+   double arrIdmLow[];
+   datetime arrIdmHBar[];
+   datetime arrIdmLBar[];
+   double arrLastH[];
+   datetime arrLastHBar[];
+   double arrLastL[];
+   datetime arrLastLBar[];
+   //arrIdmLine[];
+   //arrIdmLabel[];
+   //arrBCLine[];
+   //arrBCLabel[];
+   //arrHLLabel[];
+   //arrHLCircle[];
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -1680,13 +1687,14 @@ void TrailStop() {
    
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double spread = ask - bid;
    
    for (int i = PositionsTotal() - 1; i>=0; i--) {
       if (posinfo.SelectByIndex(i)) {
          ulong ticket = posinfo.Ticket();
          if ( posinfo.Magic() == InpMagic && posinfo.Symbol() == _Symbol) {
             if (posinfo.PositionType() == POSITION_TYPE_BUY) {
-               if(bid - posinfo.PriceOpen() > TslTriggerPoints*_Point) {
+               if(bid - posinfo.PriceOpen() > (TslTriggerPoints*_Point)) {
                   tp = posinfo.TakeProfit();
                   sl = bid - (TslPoints * _Point);
                   if (sl > posinfo.StopLoss() && sl != 0) {
@@ -1799,7 +1807,8 @@ void beginTrade() {
    bool accept_trade = true;
    double cSpread = SymbolInfoDouble(_Symbol, SYMBOL_ASK) - SymbolInfoDouble(_Symbol, SYMBOL_BID);
    if (InpMaxSpread*_Point < cSpread) {
-      CloseAllOrders();
+      ClosePending(1);
+      ClosePending(-1);
       accept_trade = false;
       return;
    }
@@ -1849,51 +1858,104 @@ void beginTrade() {
    
    // check wrong order 
    if (pendingBuy > 0 || pendingSell > 0) {
-      if (pendingBuy > 0 && ( sTrend < 0 
-         //|| (InpTrade == 0 && gTrend < 0)
-          || (InpTrade == 1 && gTrend < 0 && touchIdmHigh == 0)
-         )) {
-         // Close pending Buy
-         ClosePending(1);
-      } else if ( pendingSell > 0 && ( sTrend > 0 
-            //|| (InpTrade == 0 && gTrend > 0)
-            || (InpTrade == 1 && gTrend > 0 && touchIdmLow == 0)
+      // Neu kich hoat trade 1 chieu Marjor
+      if (InpWayTrade == 1) {
+         if (pendingBuy > 0 && ( sTrend < 0 
+            //|| (InpTrade == 0 && gTrend < 0)  // 
+             || (InpTrade == 1 && gTrend < 0 && touchIdmHigh == 0)
             )) {
-         // Close pending Sell
-         ClosePending(-1);
+            // Close pending Buy
+            ClosePending(1);
+         } else if ( pendingSell > 0 && ( sTrend > 0 
+               //|| (InpTrade == 0 && gTrend > 0)
+               || (InpTrade == 1 && gTrend > 0 && touchIdmLow == 0)
+               )) {
+            // Close pending Sell
+            ClosePending(-1);
+         }
+      } else if (InpWayTrade == 2) { // Neu kich hoat trade 2 chieu Marjor
+         if ((sTrend == 1 && touchIdmHigh == 0) || (sTrend == -1 && touchIdmLow == 0)) {
+            ClosePending(1);
+            ClosePending(-1);
+         }
       }
+      
    }
    
    //Print("Begin Trade: \n"+ getValueTrend());
    //Print("accept_trade is: "+ (string) accept_trade + " Buy total: " + (string) BuyTotal + "; Sell Total: "+ (string) SellTotal);
    
    if (accept_trade) {
-      if (BuyTotal <= 0) {
-         double tHigh = tFindHigh();
-         //Print(" - tHigh: "+ (string) tHigh);
-         if (tHigh > 0) { // neu tim thay dinh da quet idm
-            SendBuyOrder(tHigh);
-         } else { // neu chua tim thay dinh quet idm
-            if (InpTrade == 1) { // neu cau truc vao lenh la minor
-               tHigh = tMinorFindHigh();
+      if ( InpWayTrade == 1) { // Neu kich hoat trade 1 chieu Marjor
+         if (BuyTotal <= 0) {
+            // Tim marjor swing truoc. neu tra ve -1 thi tim minnor
+            double tHigh = tFindHigh();
+            if (tHigh > 0) { // neu tim thay dinh da quet idm
                SendBuyOrder(tHigh);
+            } else { // neu chua tim thay dinh quet idm
+               if (InpTrade == 1) { // neu cau truc vao lenh la minor
+                  tHigh = tMinorFindHigh();
+                  SendBuyOrder(tHigh);
+               }
+            }
+         }
+            
+         if (SellTotal <= 0) {
+            // Tim marjor swing truoc. neu tra ve -1 thi tim minnor
+            double tLow = tFindLow();
+            if (tLow > 0) {
+               SendSellOrder(tLow);
+            } else { // neu chua tim thay dinh quet idm
+               if (InpTrade == 1) { // neu cau truc vao lenh la minor
+                  tLow = tMinorFindLow();
+                  SendSellOrder(tLow);
+               }
+            }
+         }
+      } else if ( InpWayTrade == 2) {  // Neu kich hoat trade 2 chieu Marjor
+         if (BuyTotal <= 0) {
+            if (sTrend == 1) {
+               // Buy Marjor
+               double tHigh = tFindHigh();
+               if (tHigh > 0) {
+                  SendBuyOrder(tHigh);
+               } else { // neu chua tim thay dinh quet idm
+                  if (InpTrade == 1) { // neu cau truc vao lenh la minor
+                     tHigh = tMinorFindHigh();
+                     SendBuyOrder(tHigh);
+                  }
+               }
+            }
+            if (sTrend == -1) {
+               double tHigh = tGetHigh();
+               if (tHigh > 0) {
+                  SendBuyOrder(tHigh);
+               }
+            }
+         }
+         
+         if (SellTotal <= 0) {
+            if (sTrend == -1) {
+               double tLow = tFindLow();
+               if (tLow > 0) {
+                  SendSellOrder(tLow);
+               } else { // neu chua tim thay dinh quet idm
+                  if (InpTrade == 1) { // neu cau truc vao lenh la minor
+                     tLow = tMinorFindLow();
+                     SendSellOrder(tLow);
+                  }
+               }
             }
             
-         }
-      }
-         
-      if (SellTotal <= 0) {
-         double tLow = tFindLow();
-         //Print(" - tLow: "+ (string) tLow);
-         if (tLow > 0) {
-            SendSellOrder(tLow);
-         }  else { // neu chua tim thay dinh quet idm
-            if (InpTrade == 1) { // neu cau truc vao lenh la minor
-               tLow = tMinorFindLow();
-               SendSellOrder(tLow);
+            if (sTrend == 1) {
+               double tLow = tGetLow();
+               if (tLow > 0) {
+                  SendSellOrder(tLow);
+               }
             }
          }
       }
+      
    }
    //text += "--------------- End Begin Trade -----------------";
    //Print(text);
@@ -2010,11 +2072,12 @@ double tFindLow() {
    return tLow;
 }
 
-
 // Minnor Swing
 double tMinorFindHigh() {
    double tHigh = -1;
-   if (sTrend == 1 && iTrend > 0 && gTrend > 0 && touchIdmHigh == 0 && ArraySize(intSHighs) > 1) {
+   if (sTrend == 1 && iTrend > 0 
+      //&& gTrend > 0 
+      && touchIdmHigh == 0 && ArraySize(intSHighs) > 1) {
       tHigh = intSHighs[0];
    }
    return tHigh;
@@ -2022,8 +2085,26 @@ double tMinorFindHigh() {
 
 double tMinorFindLow() {
    double tLow = -1;
-   if (sTrend == -1 && iTrend < 0 && gTrend < 0 && touchIdmLow == 0 && ArraySize(intSLows) > 1) {
+   if (sTrend == -1 && iTrend < 0 
+      //&& gTrend < 0 
+      && touchIdmLow == 0 && ArraySize(intSLows) > 1) {
       tLow = intSLows[0];
+   }
+   return tLow;
+}
+
+double tGetHigh() {
+   double tHigh = -1;
+   if ((sTrend == 1 || (sTrend == -1 && touchIdmLow == 1)) && ArraySize(arrPbHigh) > 1) {
+      tHigh = arrPbHigh[0];
+   }
+   return tHigh;
+}
+
+double tGetLow() {
+   double tLow = -1;
+   if ((sTrend == -1 || (sTrend == 1 && touchIdmHigh == 1))&& ArraySize(arrPbLow) > 1) {
+      tLow = arrPbLow[0];
    }
    return tLow;
 }
