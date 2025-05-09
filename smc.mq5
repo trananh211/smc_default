@@ -23,6 +23,9 @@
       enum wayTrade { one_way = 1, two_way = 2};
       input wayTrade                InpWayTrade                      = 1;                 // Enable 1-way or 2-way trading
       
+      enum confirmLowTF { no = 0, yes = 1};
+      input confirmLowTF            InpCpLowTF                       = 1;                 // Confirmation on lower time frame
+      
       input int                     InpMaxSpread                     = 15;                // Max spread accept trade
       input ENUM_TIMEFRAMES         InpTimeframe                     = PERIOD_CURRENT;    // Time frame to run
       
@@ -1859,27 +1862,135 @@ void beginTrade() {
    if (pendingBuy > 0 || pendingSell > 0) {
       // Neu kich hoat trade 1 chieu Marjor
       if (InpWayTrade == 1) {
-         if (pendingBuy > 0 && ( sTrend < 0 
-            //|| (InpTrade == 0 && gTrend < 0)  // 
-             || (InpTrade == 1 && gTrend < 0 && touchIdmHigh == 0)
-            )) {
-            // Close pending Buy
-            ClosePending(1);
-         } else if ( pendingSell > 0 && ( sTrend > 0 
-               //|| (InpTrade == 0 && gTrend > 0)
-               || (InpTrade == 1 && gTrend > 0 && touchIdmLow == 0)
-               )) {
-            // Close pending Sell
-            ClosePending(-1);
-         }
-      } else if (InpWayTrade == 2) { // Neu kich hoat trade 2 chieu Marjor
-         if (sTrend == 1 && touchIdmHigh == 0) {
-            ClosePending(-1);
+         if (pendingBuy > 0) {
+            if (sTrend > 0) {
+               if (InpTrade == 0) { // Only Trade Marjor
+                  if (touchIdmHigh == 0) {
+                     ClosePending(1);
+                  } else {
+                     if (InpCpLowTF == 1) { // Co xac nhan LTF
+                        if (gTrend < 0) {
+                           ClosePending(1);
+                        }
+                     } 
+//                     else if (InpCpLowTF == 0) { // Khong can xac nhan LTF
+//                        
+//                     }
+                  }
+                                    
+               } else if (InpTrade == 1) { // Trade with Marjor and Minnor
+                  if (InpCpLowTF == 1) { // Co xac nhan LTF
+                     if (gTrend < 0) {
+                        ClosePending(1);
+                     }
+                  } 
+//                  else if (InpCpLowTF == 0) { // Khong can xac nhan LTF
+//                     
+//                  }
+               }
+               
+            } else if (sTrend < 0){
+               ClosePending(1);
+            }
+            
          }
          
-         if (sTrend == -1 && touchIdmLow == 0) {
-            ClosePending(1);
+         if (pendingSell > 0) {
+            if (sTrend < 0) {
+               if (InpTrade == 0) { // Only Trade Marjor
+                  if (touchIdmLow == 0) {
+                     ClosePending(-1);
+                  } else {
+                     if (InpCpLowTF == 1) { // Co xac nhan LTF
+                        if (gTrend > 0) {
+                           ClosePending(-1);
+                        }
+                     } 
+//                     else if (InpCpLowTF == 0) { // Khong can xac nhan LTF
+//                        
+//                     }
+                  }
+                                    
+               } else if (InpTrade == 1) { // Trade with Marjor and Minnor
+                  if (InpCpLowTF == 1) { // Co xac nhan LTF
+                     if (gTrend > 0) {
+                        ClosePending(-1);
+                     }
+                  } 
+//                  else if (InpCpLowTF == 0) { // Khong can xac nhan LTF
+//                     
+//                  }
+               }
+               
+            } else if (sTrend > 0){
+               ClosePending(-1);
+            }
          }
+//         
+//         
+//         if (pendingBuy > 0 && ( sTrend < 0 
+//            //|| (InpTrade == 0 && gTrend < 0)  // 
+//             || (InpTrade == 1 && gTrend < 0 && touchIdmHigh == 0)
+//            )) {
+//            // Close pending Buy
+//            ClosePending(1);
+//         } else if ( pendingSell > 0 && ( sTrend > 0 
+//               //|| (InpTrade == 0 && gTrend > 0)
+//               || (InpTrade == 1 && gTrend > 0 && touchIdmLow == 0)
+//               )) {
+//            // Close pending Sell
+//            ClosePending(-1);
+//         }
+      } else if (InpWayTrade == 2) { // Neu kich hoat trade 2 chieu Marjor
+         if (sTrend == 1) {
+            if (pendingBuy > 0) {
+               if (InpCpLowTF == 1) { // Co xac nhan LTF
+                  if (gTrend < 0) {
+                     ClosePending(1);
+                  }
+               }
+            }
+            
+            if (pendingSell > 0) {
+               // Neu chua quet IDM, huy toan bo lenh sell Marjor
+               if (touchIdmHigh == 0) {
+                  ClosePending(-1);
+               }
+               if (InpCpLowTF == 1) { // Co xac nhan LTF
+                  if (gTrend > 0) {
+                     ClosePending(-1);
+                  }
+               }
+            }
+         } else if(sTrend == -1){
+            if (pendingSell > 0) {
+               if (InpCpLowTF == 1) { // Co xac nhan LTF
+                  if (gTrend > 0) {
+                     ClosePending(-1);
+                  }
+               }
+            }
+            
+            if (pendingBuy > 0) {
+               // Neu chua quet IDM, huy toan bo lenh buy Marjor
+               if (touchIdmLow == 0) {
+                  ClosePending(1);
+               }
+               if (InpCpLowTF == 1) { // Co xac nhan LTF
+                  if (gTrend < 0) {
+                     ClosePending(1);
+                  }
+               }
+            } 
+         }
+         
+//         if (sTrend == 1 && touchIdmHigh == 0) {
+//            ClosePending(-1);
+//         }
+//         
+//         if (sTrend == -1 && touchIdmLow == 0) {
+//            ClosePending(1);
+//         }
          
       }
       
@@ -2057,20 +2168,30 @@ void CloseAllOrders() {
 // Marjor swing
 double tFindHigh() {
    double tHigh = -1;
-   if (sTrend == 1 
-      //&& gTrend > 0 
-      && touchIdmHigh == 1 && ArraySize(arrPbHigh) > 1 && arrPbHigh[0] >= intSHighs[0]) {
-      tHigh = arrPbHigh[0];
+   // Bo qua confirm cau truc o Low TimeFrame
+   if (InpCpLowTF == 0) {
+      if (sTrend == 1 && touchIdmHigh == 1 && ArraySize(arrPbHigh) > 1 && arrPbHigh[0] >= intSHighs[0]) {
+         tHigh = arrPbHigh[0];
+      }
+   } else if (InpCpLowTF == 1) { // Xac nhan confirm cau truc o Low TimeFrame
+      if (sTrend == 1 && gTrend > 0 && touchIdmHigh == 1 && ArraySize(arrPbHigh) > 1 && arrPbHigh[0] >= intSHighs[0]) {
+         tHigh = arrPbHigh[0];
+      }
    }
    return tHigh;
 }
 
 double tFindLow() {
    double tLow = -1;
-   if (sTrend == -1 
-      //&& gTrend < 0 
-      && touchIdmLow == 1 && ArraySize(arrPbLow) > 1 && arrPbLow[0] <= intSLows[0]) {
-      tLow = arrPbLow[0];
+   // Bo qua confirm cau truc o Low TimeFrame
+   if (InpCpLowTF == 0) {
+      if (sTrend == -1 && touchIdmLow == 1 && ArraySize(arrPbLow) > 1 && arrPbLow[0] <= intSLows[0]) {
+         tLow = arrPbLow[0];
+      }
+   } else if (InpCpLowTF == 1) { // Xac nhan confirm cau truc o Low TimeFrame
+      if (sTrend == -1 && gTrend < 0 && touchIdmLow == 1 && ArraySize(arrPbLow) > 1 && arrPbLow[0] <= intSLows[0]) {
+         tLow = arrPbLow[0];
+      }
    }
    return tLow;
 }
@@ -2078,36 +2199,60 @@ double tFindLow() {
 // Minnor Swing
 double tMinorFindHigh() {
    double tHigh = -1;
-   if (sTrend == 1 && iTrend > 0 
-      //&& gTrend > 0 
-      && touchIdmHigh == 0 && ArraySize(intSHighs) > 1) {
-      tHigh = intSHighs[0];
+   // Bo qua confirm cau truc o Low TimeFrame
+   if (InpCpLowTF == 0) {
+      if (sTrend == 1 && iTrend > 0 && touchIdmHigh == 0 && ArraySize(intSHighs) > 1) {
+         tHigh = intSHighs[0];
+      }
+   } else if (InpCpLowTF == 1) { // Xac nhan confirm cau truc o Low TimeFrame
+      if (sTrend == 1 && iTrend > 0 && gTrend > 0 && touchIdmHigh == 0 && ArraySize(intSHighs) > 1) {
+         tHigh = intSHighs[0];
+      }
    }
    return tHigh;
 }
 
 double tMinorFindLow() {
    double tLow = -1;
-   if (sTrend == -1 && iTrend < 0 
-      //&& gTrend < 0 
-      && touchIdmLow == 0 && ArraySize(intSLows) > 1) {
-      tLow = intSLows[0];
+   // Bo qua confirm cau truc o Low TimeFrame
+   if (InpCpLowTF == 0) {
+      if (sTrend == -1 && iTrend < 0 && touchIdmLow == 0 && ArraySize(intSLows) > 1) {
+         tLow = intSLows[0];
+      }
+   } else if (InpCpLowTF == 1) { // Xac nhan confirm cau truc o Low TimeFrame
+      if (sTrend == -1 && iTrend < 0 && gTrend < 0 && touchIdmLow == 0 && ArraySize(intSLows) > 1) {
+         tLow = intSLows[0];
+      }
    }
    return tLow;
 }
 
 double tGetHigh() {
    double tHigh = -1;
-   if ((sTrend == 1 || (sTrend == -1 && touchIdmLow == 1)) && ArraySize(arrPbHigh) > 1 && arrPbHigh[0] >= intSHighs[0]) {
-      tHigh = arrPbHigh[0];
+   // Bo qua confirm cau truc o Low TimeFrame
+   if (InpCpLowTF == 0) {
+      if ((sTrend == 1 || (sTrend == -1 && touchIdmLow == 1)) && ArraySize(arrPbHigh) > 1 && arrPbHigh[0] >= intSHighs[0]) {
+         tHigh = arrPbHigh[0];
+      }
+   } else if (InpCpLowTF == 1) { // Xac nhan confirm cau truc o Low TimeFrame
+      if (gTrend == 1 && (sTrend == 1 || (sTrend == -1 && touchIdmLow == 1)) && ArraySize(arrPbHigh) > 1 && arrPbHigh[0] >= intSHighs[0]) {
+         tHigh = arrPbHigh[0];
+      }
    }
    return tHigh;
 }
 
 double tGetLow() {
    double tLow = -1;
-   if ((sTrend == -1 || (sTrend == 1 && touchIdmHigh == 1))&& ArraySize(arrPbLow) > 1 && arrPbLow[0] <= intSLows[0]) {
-      tLow = arrPbLow[0];
+   // Bo qua confirm cau truc o Low TimeFrame
+   if (InpCpLowTF == 0) {
+      if ((sTrend == -1 || (sTrend == 1 && touchIdmHigh == 1))&& ArraySize(arrPbLow) > 1 && arrPbLow[0] <= intSLows[0]) {
+         tLow = arrPbLow[0];
+      }
+   } else if (InpCpLowTF == 1) { // Xac nhan confirm cau truc o Low TimeFrame
+      if (gTrend == -1 && (sTrend == -1 || (sTrend == 1 && touchIdmHigh == 1))&& ArraySize(arrPbLow) > 1 && arrPbLow[0] <= intSLows[0]) {
+         tLow = arrPbLow[0];
+      }
    }
    return tLow;
 }
